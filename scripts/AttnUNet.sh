@@ -8,6 +8,7 @@ nohup python -u main.py \
 	--end-point 18016 \
 	--sample-point 16060 \
         --max-iterations 50000 \
+        --early-stopping \
         --log-interval 10 \
         --batch-size 8 \
         --num-workers 4 \
