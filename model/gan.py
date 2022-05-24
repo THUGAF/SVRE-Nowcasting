@@ -1,6 +1,39 @@
 import torch
 import torch.nn as nn
 
+from model import *
+
+
+class GAN(nn.Module):
+    r"""Deep Generative Adversarial Network.
+
+    Args:
+        args (args): Necessary arguments.
+    """
+
+    def __init__(self, args):
+        super(GAN, self).__init__()
+        if args.model == 'EncoderForecaster':
+            self.generator = EncoderForecaster(
+                forecast_steps=args.forecast_steps,
+                in_channels=args.in_channels, out_channels=args.out_channels,
+                hidden_channels=args.hidden_channels
+            )
+        elif args.model == 'SmaAt_UNet':
+            self.generator = SmaAt_UNet(
+                n_channels=args.input_steps, n_classes=args.forecast_steps
+            )
+        elif args.model == 'AttnUNet':
+            self.generator = AttnUNet(
+                input_steps=args.input_steps, forecast_steps=args.forecast_steps, add_noise=True
+            )
+        
+        self.discriminator = Discriminator(
+            total_steps= args.input_steps + args.forecast_steps
+        )
+        
+        self.args = args
+
 
 class Discriminator(nn.Module):
     r"""Discriminator.

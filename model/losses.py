@@ -3,10 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-def recon_loss(pred, truth):
-    return F.l1_loss(pred, truth)
-
-
 def cv_loss(pred, truth, eps=1e-8):
     pred_cv = torch.std(pred, dim=0) / (torch.mean(pred, dim=0) + eps)
     truth_cv = torch.std(truth, dim=0) / (torch.mean(truth, dim=0) + eps)
