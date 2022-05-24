@@ -1,16 +1,17 @@
 CUDA_VISIBLE_DEVICES=1 \
-nohup python -u main.py \
-        --data-path /data/gaf/SBandCRNpz \
-        --output-path results/AttnUNet \
-        --predict \
-        --generator AttnUNet \
-        --start-point 0 \
-	--end-point 18016 \
-	--sample-point 16060 \
-        --max-iterations 50000 \
-        --early-stopping \
-        --log-interval 10 \
-        --batch-size 8 \
-        --num-workers 4 \
-        --num-threads 4 \
-        > out_AttnUNet.log 2>&1 &
+nohup python -u train.py \
+    --data-path /data/gaf/SBandCRUnzip \
+    --output-path results/AttnUNet \
+    --model AttnUNet \
+    --pretrain \
+    --train \
+    --test \
+    --predict \
+    --sample-index 16840 \
+    --batch-size 16 \
+    --random-crop-num 1 \
+    --max-iterations 100000 \
+    --num-threads 8 \
+    --num-workers 8 \
+    --display-interval 10 \
+    > AttnUNet.log 2>&1 &

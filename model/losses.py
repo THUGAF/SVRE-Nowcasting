@@ -3,6 +3,24 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def biased_mse_loss(pred, truth, vmax):
+    weight = (truth < 10 / vmax) * 1 \
+        + (torch.logical_and(truth >= 10 / vmax, truth < 20 / vmax)) * 2 \
+        + (torch.logical_and(truth >= 20 / vmax, truth < 30 / vmax)) * 5 \
+        + (torch.logical_and(truth >= 30 / vmax, truth < 40 / vmax)) * 10 \
+        + (truth > 30 / vmax) * 30
+    return torch.mean(weight * (pred - truth) ** 2)
+
+
+def biased_mae_loss(pred, truth, vmax):
+    weight = (truth < 10 / vmax) * 1 \
+        + (torch.logical_and(truth >= 10 / vmax, truth < 20 / vmax)) * 2 \
+        + (torch.logical_and(truth >= 20 / vmax, truth < 30 / vmax)) * 5 \
+        + (torch.logical_and(truth >= 30 / vmax, truth < 40 / vmax)) * 10 \
+        + (truth > 30 / vmax) * 30
+    return torch.mean(weight * torch.abs(pred - truth))
+
+
 def cv_loss(pred, truth, eps=1e-8):
     pred_cv = torch.std(pred, dim=0) / (torch.mean(pred, dim=0) + eps)
     truth_cv = torch.std(truth, dim=0) / (torch.mean(truth, dim=0) + eps)

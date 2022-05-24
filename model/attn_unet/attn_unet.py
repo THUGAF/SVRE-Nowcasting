@@ -50,7 +50,7 @@ class AttnUNet(nn.Module):
         h1 = self.up1(h2, h1)
 
         out = self.out_conv(h1)
-        out = out.transpose(1, 0).unsqueeze(2)
+        out = out.reshape(batch_size, length, channels, height, width).transpose(1, 0)
         out = self.relu(out)
         return out
         
