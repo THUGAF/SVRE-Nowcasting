@@ -3,7 +3,6 @@ nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
     --output-path results/AttnUNet \
     --model AttnUNet \
-    --pretrain \
     --train \
     --test \
     --predict \

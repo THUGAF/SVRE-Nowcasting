@@ -8,6 +8,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.optim import Adam
+from torch.optim.lr_scheduler import StepLR
 
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
@@ -69,12 +70,17 @@ class Trainer:
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
-        self.total_epochs = int(math.ceil(
-            (self.args.max_iterations - self.args.start_iterations) / len(train_loader)))
-
+        if self.args.pretrain:
+            start_iterations = self.load_checkpoint()['iteration']
+        else:
+            start_iterations = 0
+        self.total_epochs = int(math.ceil((self.args.max_iterations - start_iterations) / len(train_loader)))
+        
         self.optimizer = Adam(self.model.parameters(), lr=self.args.lr,
                               betas=(self.args.beta1, self.args.beta2),
                               weight_decay=self.args.weight_decay)
+        self.scheduler = StepLR(self.optimizer, step_size=2000, gamma=0.5)
+
         if self.args.train:
             self.train()
         if self.args.test:
@@ -117,6 +123,7 @@ class Trainer:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
+                self.scheduler.step()
 
                 input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -309,4 +316,3 @@ class Trainer:
     def load_checkpoint(self, filename='checkpoint.pt'):
         states = torch.load(os.path.join(self.args.output_path, filename), map_location=self.args.device)
         return states
-
