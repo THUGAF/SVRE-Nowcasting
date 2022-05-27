@@ -8,7 +8,7 @@ def biased_mse_loss(pred, truth, vmax):
         + (torch.logical_and(truth >= 10 / vmax, truth < 20 / vmax)) * 2 \
         + (torch.logical_and(truth >= 20 / vmax, truth < 30 / vmax)) * 5 \
         + (torch.logical_and(truth >= 30 / vmax, truth < 40 / vmax)) * 10 \
-        + (truth > 30 / vmax) * 30
+        + (truth >= 40 / vmax) * 30
     return torch.mean(weight * (pred - truth) ** 2)
 
 
@@ -17,7 +17,7 @@ def biased_mae_loss(pred, truth, vmax):
         + (torch.logical_and(truth >= 10 / vmax, truth < 20 / vmax)) * 2 \
         + (torch.logical_and(truth >= 20 / vmax, truth < 30 / vmax)) * 5 \
         + (torch.logical_and(truth >= 30 / vmax, truth < 40 / vmax)) * 10 \
-        + (truth > 30 / vmax) * 30
+        + (truth >= 40 / vmax) * 30
     return torch.mean(weight * torch.abs(pred - truth))
 
 
