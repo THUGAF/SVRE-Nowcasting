@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=1 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
     --output-path results/AttnUNet \
@@ -13,5 +13,5 @@ nohup python -u train.py \
     --early-stopping \
     --num-threads 8 \
     --num-workers 8 \
-    --display-interval 10 \
+    --display-interval 20 \
     > AttnUNet.log 2>&1 &
