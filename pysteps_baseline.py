@@ -73,7 +73,9 @@ def nowcast(args):
     pred_rev, truth_rev = pred, truth
     pred = scaler.minmax_norm(pred, args.vmax, args.vmin)
     truth = scaler.minmax_norm(truth, args.vmax, args.vmin)
+    
     metrics = {}
+    metrics['Time'] = np.linspace(6, 60, 10)
     for threshold in args.thresholds:
         pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
         metrics['POD-{}dBZ'.format(str(threshold))] = pod
@@ -91,7 +93,7 @@ def nowcast(args):
     metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
     
     df = pd.DataFrame(data=metrics)
-    df.to_csv(os.path.join(args.output_path, 'sample_metrics.csv'), float_format='%.8f')
+    df.to_csv(os.path.join(args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
 
     print('\nBaseline Done.')
 

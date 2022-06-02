@@ -1,1 +1,1 @@
-nohup python -u baseline.py > PySTEPS.log 2>&1 &
+nohup python -u pysteps_baseline.py > PySTEPS.log 2>&1 &

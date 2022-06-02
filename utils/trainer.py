@@ -119,7 +119,7 @@ class Trainer:
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
                 pred = self.model(input_)
-                loss = losses.biased_mae_loss(pred, truth, self.args.vmax)
+                loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -153,7 +153,7 @@ class Trainer:
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
                     pred = self.model(input_)
-                    loss = losses.biased_mae_loss(pred, truth, self.args.vmax)
+                    loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
 
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -188,6 +188,7 @@ class Trainer:
 
     def test(self):
         metrics = {}
+        metrics['Time'] = np.linspace(6, 60, 10)
         for threshold in self.args.thresholds:
             metrics['POD-%ddBZ' % threshold] = []
             metrics['FAR-%ddBZ' % threshold] = []
@@ -197,6 +198,10 @@ class Trainer:
         metrics['ME'] = []
         metrics['MAE'] = []
         metrics['RMSE'] = []
+        metrics['SSIM'] = []
+        metrics['PSNR'] = []
+        metrics['CVR'] = []
+        metrics['SSDR'] = []
         test_loss = []
         
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
@@ -212,7 +217,7 @@ class Trainer:
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
                 pred = self.model(input_)
-                loss = losses.biased_mae_loss(pred, truth, self.args.vmax)
+                loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
 
                 input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -232,6 +237,10 @@ class Trainer:
                 metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
                 metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
                 metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
+                metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
+                metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
+                metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
+                metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
                     
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
         for threshold in self.args.thresholds:
@@ -243,14 +252,19 @@ class Trainer:
         metrics['ME'] = np.mean(metrics['ME'], axis=0)
         metrics['MAE'] = np.mean(metrics['MAE'], axis=0)
         metrics['RMSE'] = np.mean(metrics['RMSE'], axis=0)
-        
+        metrics['SSIM'] = np.mean(metrics['SSIM'], axis=0)
+        metrics['PSNR'] = np.mean(metrics['PSNR'], axis=0)
+        metrics['CVR'] = np.mean(metrics['CVR'], axis=0)
+        metrics['SSDR'] = np.mean(metrics['SSDR'], axis=0)
+
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.8f')
+        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
         print('Test done.')
 
     def predict(self, model, sample_loader):
         metrics = {}
+        metrics['Time'] = np.linspace(6, 60, 10)
         self.model = model
         self.model.to(self.args.device)
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
@@ -281,9 +295,13 @@ class Trainer:
                 metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
                 metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
                 metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
+                metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
+                metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+                metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
+                metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
                     
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f')
+        df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample')
         print('Predict done.')
 
