@@ -3,7 +3,6 @@ from typing import List
 
 import torch
 from torch.utils.data import DataLoader, Dataset, Subset
-from torchvision.transforms import RandomCrop
 
 import numpy as np
 import netCDF4 as nc
@@ -66,14 +65,10 @@ class TrainingDataset(Dataset):
     def load_nc(self, files, augment_flag):
         tensor = []
         timestamp = []
-        random_crop = RandomCrop(size=(self.lat_range[1] - self.lat_range[0], self.lon_range[1] - self.lon_range[0]))
         for file_ in files:
             nc_file = nc.Dataset(file_)
             dbz = torch.from_numpy(nc_file.variables['DBZ'][:])
-            if augment_flag == 0:
-                dbz = dbz[:, self.lat_range[0]: self.lat_range[1], self.lon_range[0]: self.lon_range[1]]
-            else:
-                dbz = random_crop.forward(dbz)
+            dbz = dbz[:, self.lat_range[0]: self.lat_range[1], self.lon_range[0]: self.lon_range[1]]
             second = float(nc_file.variables['time'][:])
             tensor.append(dbz)
             timestamp.append(np.int64(second))

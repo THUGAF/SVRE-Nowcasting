@@ -4,7 +4,7 @@ import warnings
 import torch
 
 from model import *
-from utils.trainer import Trainer
+from utils.trainer import Trainer, GANTrainer
 import utils.dataloader as dataloader
 
 
@@ -24,6 +24,7 @@ parser.add_argument('--sample-index', type=int, default=0)
 
 # model settings
 parser.add_argument('--model', type=str, default='AttnUNet')
+parser.add_argument('--add-gan', action='store_true')
 
 # training settings
 parser.add_argument('--pretrain', action='store_true')
@@ -38,7 +39,7 @@ parser.add_argument('--start-iterations', type=int, default=0)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--beta1', type=float, default=0.9)
 parser.add_argument('--beta2', type=float, default=0.999)
-parser.add_argument('--weight-decay', type=float, default=1e-4)
+parser.add_argument('--weight-decay', type=float, default=1e-2)
 parser.add_argument('--var-reg', type=float, default=0)
 parser.add_argument('--num-threads', type=int, default=1)
 parser.add_argument('--num-workers', type=int, default=1)
@@ -59,6 +60,7 @@ args = parser.parse_args()
 
 
 def main():
+    torch.autograd.set_detect_anomaly(True)
     # Display global settings
     print('Temporal resolution: {} min'.format(args.resolution))
     print('Spatial resolution: 1.0 km')
@@ -77,6 +79,8 @@ def main():
     # Set the model
     if args.model == 'AttnUNet':
         model = AttnUNet(args.input_steps, args.forecast_steps)
+    if args.add_gan:
+        model = GAN(model, args)
  
     # Load data
     if args.train or args.test:
@@ -92,7 +96,11 @@ def main():
     if not os.path.exists(args.output_path):
         os.mkdir(args.output_path)
     
-    trainer = Trainer(args)
+    # Set trainer
+    if args.add_gan:
+        trainer = GANTrainer(args)
+    else:
+        trainer = Trainer(args)
     if args.train or args.test:
         trainer.fit(model, train_loader, val_loader, test_loader)
     if args.predict:

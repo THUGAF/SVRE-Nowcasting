@@ -11,28 +11,17 @@ class GAN(nn.Module):
         args (args): Necessary arguments.
     """
 
-    def __init__(self, args):
+    def __init__(self, generator, args):
         super(GAN, self).__init__()
-        if args.model == 'EncoderForecaster':
-            self.generator = EncoderForecaster(
-                forecast_steps=args.forecast_steps,
-                in_channels=args.in_channels, out_channels=args.out_channels,
-                hidden_channels=args.hidden_channels
-            )
-        elif args.model == 'SmaAt_UNet':
-            self.generator = SmaAt_UNet(
-                n_channels=args.input_steps, n_classes=args.forecast_steps
-            )
-        elif args.model == 'AttnUNet':
-            self.generator = AttnUNet(
-                input_steps=args.input_steps, forecast_steps=args.forecast_steps, add_noise=True
-            )
-        
+        self.generator = generator
         self.discriminator = Discriminator(
-            total_steps= args.input_steps + args.forecast_steps
+            total_steps=args.input_steps + args.forecast_steps
         )
         
         self.args = args
+    
+    def forward(self, x):
+        return self.generator(x)
 
 
 class Discriminator(nn.Module):
@@ -56,14 +45,15 @@ class Discriminator(nn.Module):
     def forward(self, x) -> torch.Tensor:
         # Embed L into channel dimension
         length, batch_size, channels, height, width = x.size()
-        x = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)    # (L, B, C, H, W) -> (B, C*L, H, W)
-        h = self.d1(x)
+        h = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)    # (L, B, C, H, W) -> (B, C*L, H, W)
+        h = self.d1(h)
         h = self.d2(h)
         h = self.d3(h)
         h = self.d4(h)
         h = self.d5(h)
         h = self.d6(h)
-        out = self.last(h).reshape(batch_size, 1)
+        out = self.last(h)
+        out = out.reshape(batch_size, 1)
         return out
 
 
@@ -73,10 +63,10 @@ class DoubleConv2d(nn.Module):
         self.conv = nn.Sequential(
             nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding),
             nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(0.2, inplace=True),
+            nn.LeakyReLU(0.2),
             nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding),
             nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(0.2, inplace=True)
+            nn.LeakyReLU(0.2)
         )
         self.attn = CBAM(out_channels)
     

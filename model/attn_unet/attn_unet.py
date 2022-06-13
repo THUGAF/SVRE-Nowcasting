@@ -27,7 +27,7 @@ class AttnUNet(nn.Module):
         self.up1 = Up(64, 32)
 
         self.out_conv = nn.Conv2d(32, forecast_steps, kernel_size=1)
-        self.relu = nn.ReLU(inplace=True)
+        self.relu = nn.ReLU()
 
     def forward(self, x):
         length, batch_size, channels, height, width = x.size()
