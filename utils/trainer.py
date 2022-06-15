@@ -344,7 +344,8 @@ class GANTrainer:
 
     def fit(self, model, train_loader, val_loader, test_loader):
         self.model = model
-        self.model.to(self.args.device)
+        self.model.generator.to(self.args.device)
+        self.model.discriminator.to(self.args.device)
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -401,6 +402,7 @@ class GANTrainer:
             # Train
             self.model.train()
             for i, (tensor, timestamp) in enumerate(self.train_loader):
+                print(i)
                 tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
@@ -410,16 +412,15 @@ class GANTrainer:
 
                 pred = self.model(input_)
                 real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_score = self.model.discriminator(torch.cat([input_, pred.detach()]))
+                fake_score = self.model.discriminator(torch.cat([input_, pred]))
                 
                 # Backward propagation
                 loss_d = losses.cal_d_loss(fake_score, real_score)
                 self.optimizer_d.zero_grad()
-                loss_d.backward()
+                loss_d.backward(retain_graph=True)
                 self.optimizer_d.step()
                 self.scheduler_d.step()
 
-                fake_score = self.model.discriminator(torch.cat([input_, pred]))
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
                     losses.cal_g_loss(fake_score)

@@ -44,12 +44,12 @@ class AttnUNet(nn.Module):
         if self.add_noise:
             z = Normal(0, 1).sample(h_last.size()).type_as(h_last)
             h_last = torch.cat([h_last, z], dim=1)
-        h4 = self.up4(h_last, h4)
-        h3 = self.up3(h4, h3)
-        h2 = self.up2(h3, h2)
-        h1 = self.up1(h2, h1)
+        h4p = self.up4(h_last, h4)
+        h3p = self.up3(h4p, h3)
+        h2p = self.up2(h3p, h2)
+        h1p = self.up1(h2p, h1)
 
-        out = self.out_conv(h1)
+        out = self.out_conv(h1p)
         out = out.reshape(batch_size, length, channels, height, width).transpose(1, 0)
         out = self.relu(out)
         return out

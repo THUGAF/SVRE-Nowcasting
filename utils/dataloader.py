@@ -17,18 +17,16 @@ class TrainingDataset(Dataset):
         forecast_steps: (int): Number of forecast steps.
         lon_range (List[int]): Longitude range for images.
         lat_range (List[int]): Latitude range for images.
-        random_crop_num (int): Num for date augmentation with random crop. Default is 1.
     """
 
     def __init__(self, root: str, input_steps: int, forecast_steps: int, lon_range: List[int], 
-                 lat_range: List[int], random_crop_num: int = 1):
+                 lat_range: List[int]):
         super().__init__()
         self.root = root
         self.input_steps = input_steps
         self.forecast_steps = forecast_steps
         self.lon_range = lon_range
         self.lat_range = lat_range
-        self.random_crop_num = random_crop_num
 
         self.sample_num = []
         self.files = []
@@ -44,25 +42,23 @@ class TrainingDataset(Dataset):
         self.sample_cumsum = np.cumsum(self.sample_num)
 
     def __getitem__(self, index):
-        files, augment_flag = self.locate_files(index)
-        tensor, timestamp = self.load_nc(files, augment_flag)
+        files = self.locate_files(index)
+        tensor, timestamp = self.load_nc(files)
         return tensor, timestamp
     
     def __len__(self,):
-        return sum(self.sample_num) * self.random_crop_num
+        return sum(self.sample_num)
         
     def locate_files(self, index):
-        true_index = index // self.random_crop_num
-        augment_flag = index % self.random_crop_num
-        date_order = np.where(true_index - self.sample_cumsum < 0)[0][0]
+        date_order = np.where(index - self.sample_cumsum < 0)[0][0]
         if date_order == 0:
-            file_anchor = true_index
+            file_anchor = index
         else:
-            file_anchor = true_index + date_order * (self.total_steps - 1)
+            file_anchor = index + date_order * (self.total_steps - 1)
         files = self.files[file_anchor: file_anchor + self.total_steps]
-        return files, augment_flag
+        return files
     
-    def load_nc(self, files, augment_flag):
+    def load_nc(self, files):
         tensor = []
         timestamp = []
         for file_ in files:
@@ -95,8 +91,8 @@ class SampleDataset(TrainingDataset):
         self.sample_index = sample_index
 
     def __getitem__(self, index: int):
-        files, augment_flag = self.locate_files(self.sample_index)
-        tensor, timestamp = self.load_nc(files, augment_flag)
+        files = self.locate_files(self.sample_index)
+        tensor, timestamp = self.load_nc(files)
         return tensor, timestamp
 
     def __len__(self):
@@ -118,12 +114,11 @@ def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int,
         valid_ratio (float): Validation ratio of the whole dataset.
         lon_range (List[int]): Longitude range for images.
         lat_range (List[int]): Latitude range for images.
-        random_crop_num (int): Num for date augmentation with random crop. Default is 1.
     Returns:
         DataLoader: Dataloader for training and test.
     """
 
-    dataset = TrainingDataset(root, input_steps, forecast_steps, lon_range, lat_range, random_crop_num)
+    dataset = TrainingDataset(root, input_steps, forecast_steps, lon_range, lat_range)
     dataset_size = len(dataset)
     indices = list(range(dataset_size))
 
