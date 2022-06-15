@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-import pytorch_ssim
+import utils.pytorch_ssim as pytorch_ssim
 import utils.scaler as scaler
 
 
