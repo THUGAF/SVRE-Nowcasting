@@ -111,8 +111,8 @@ class Trainer:
             # Train
             self.model.train()
             for i, (tensor, timestamp) in enumerate(self.train_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -147,8 +147,8 @@ class Trainer:
             self.model.eval()
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
-                    tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                    timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                    tensor = tensor.transpose(1, 0).to(self.args.device)
+                    timestamp = timestamp.transpose(1, 0).to(self.args.device)
                     input_ = tensor[:self.args.input_steps]
                     truth = tensor[self.args.input_steps:]
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -211,8 +211,8 @@ class Trainer:
         print('\n[Test]')
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(self.test_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -274,8 +274,8 @@ class Trainer:
         print('\n[Predict]')
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(sample_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -316,7 +316,7 @@ class Trainer:
         self.model.eval()
         with torch.no_grad():
             for tensor, _ in input_loader:
-                input_ = tensor.transpose(1, 0).contiguous().to(self.args.device)
+                input_ = tensor.transpose(1, 0).to(self.args.device)
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred = self.model(input_)
                 pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -402,8 +402,8 @@ class GANTrainer:
             # Train
             self.model.train()
             for i, (tensor, timestamp) in enumerate(self.train_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -452,8 +452,8 @@ class GANTrainer:
             self.model.eval()
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
-                    tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                    timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                    tensor = tensor.transpose(1, 0).to(self.args.device)
+                    timestamp = timestamp.transpose(1, 0).to(self.args.device)
                     input_ = tensor[:self.args.input_steps]
                     truth = tensor[self.args.input_steps:]
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -526,8 +526,8 @@ class GANTrainer:
         print('\n[Test]')
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(self.test_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -596,8 +596,8 @@ class GANTrainer:
         print('\n[Predict]')
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(sample_loader):
-                tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
+                tensor = tensor.transpose(1, 0).to(self.args.device)
+                timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
                 truth = tensor[self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
@@ -638,7 +638,7 @@ class GANTrainer:
         self.model.eval()
         with torch.no_grad():
             for tensor, _ in input_loader:
-                input_ = tensor.transpose(1, 0).contiguous().to(self.args.device)
+                input_ = tensor.transpose(1, 0).to(self.args.device)
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred = self.model(input_)
                 pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
