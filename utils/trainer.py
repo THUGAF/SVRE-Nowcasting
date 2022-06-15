@@ -402,7 +402,6 @@ class GANTrainer:
             # Train
             self.model.train()
             for i, (tensor, timestamp) in enumerate(self.train_loader):
-                print(i)
                 tensor = tensor.transpose(1, 0).contiguous().to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).contiguous().to(self.args.device)
                 input_ = tensor[:self.args.input_steps]

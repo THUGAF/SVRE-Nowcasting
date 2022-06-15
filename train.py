@@ -32,8 +32,7 @@ parser.add_argument('--train', action='store_true')
 parser.add_argument('--test', action='store_true')
 parser.add_argument('--predict', action='store_true')
 parser.add_argument('--early-stopping', action='store_true')
-parser.add_argument('--batch-size', type=int, default=2)
-parser.add_argument('--random-crop-num', type=int, default=1)
+parser.add_argument('--batch-size', type=int, default=4)
 parser.add_argument('--max-iterations', type=int, default=100000)
 parser.add_argument('--start-iterations', type=int, default=0)
 parser.add_argument('--lr', type=float, default=1e-4)
@@ -60,7 +59,6 @@ args = parser.parse_args()
 
 
 def main():
-    torch.autograd.set_detect_anomaly(True)
     # Display global settings
     print('Temporal resolution: {} min'.format(args.resolution))
     print('Spatial resolution: 1.0 km')
@@ -72,6 +70,8 @@ def main():
     # fix the random seed
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+    torch.autograd.set_detect_anomaly(True)
 
     # Set device
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -86,7 +86,7 @@ def main():
     if args.train or args.test:
         train_loader, val_loader, test_loader = dataloader.load_data(args.data_path, 
             args.input_steps, args.forecast_steps, args.batch_size, args.num_workers, 
-            args.train_ratio, args.valid_ratio, args.lon_range, args.lat_range, args.random_crop_num)
+            args.train_ratio, args.valid_ratio, args.lon_range, args.lat_range)
     if args.predict:
         sample_loader = dataloader.load_sample(args.data_path, args.sample_index, args.input_steps, 
             args.forecast_steps, args.lon_range, args.lat_range)
