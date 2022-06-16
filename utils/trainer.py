@@ -358,7 +358,7 @@ class GANTrainer:
         self.optimizer_g = Adam(self.model.generator.parameters(), lr=self.args.lr,
                                 betas=(self.args.beta1, self.args.beta2),
                                 weight_decay=self.args.weight_decay)
-        self.optimizer_d = Adam(self.model.generator.parameters(), lr=self.args.lr * 2,
+        self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr * 2,
                                 betas=(self.args.beta1, self.args.beta2),
                                 weight_decay=self.args.weight_decay)
         self.scheduler_g = StepLR(self.optimizer_g, step_size=2000, gamma=0.5)
