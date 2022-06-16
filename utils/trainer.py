@@ -411,15 +411,16 @@ class GANTrainer:
 
                 pred = self.model(input_)
                 real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_score = self.model.discriminator(torch.cat([input_, pred]))
+                fake_score = self.model.discriminator(torch.cat([input_, pred.detach()]))
                 
                 # Backward propagation
                 loss_d = losses.cal_d_loss(fake_score, real_score)
                 self.optimizer_d.zero_grad()
-                loss_d.backward(retain_graph=True)
+                loss_d.backward()
                 self.optimizer_d.step()
                 self.scheduler_d.step()
 
+                fake_score = self.model.discriminator(torch.cat([input_, pred]))
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
                     losses.cal_g_loss(fake_score)
