@@ -463,7 +463,7 @@ class GANTrainer:
                     pred = self.model(input_)
                     real_score = self.model.discriminator(torch.cat([input_, truth]))
                     fake_score = self.model.discriminator(torch.cat([input_, pred]))
-                    loss_d = losses.cal_d_loss(fake_score, real_score)
+                    loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
                     loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                         losses.cv_loss(pred, truth) * self.args.var_reg + \
                         losses.cal_g_loss(fake_score) * self.args.gan_reg
@@ -537,7 +537,7 @@ class GANTrainer:
                 pred = self.model(input_)
                 real_score = self.model.discriminator(torch.cat([input_, truth]))
                 fake_score = self.model.discriminator(torch.cat([input_, pred]))
-                loss_d = losses.cal_d_loss(fake_score, real_score)
+                loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
                     losses.cal_g_loss(fake_score) * self.args.gan_reg
