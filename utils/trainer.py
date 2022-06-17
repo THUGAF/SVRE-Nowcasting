@@ -466,7 +466,7 @@ class GANTrainer:
                     loss_d = losses.cal_d_loss(fake_score, real_score)
                     loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                         losses.cv_loss(pred, truth) * self.args.var_reg + \
-                        losses.cal_g_loss(fake_score)
+                        losses.cal_g_loss(fake_score) * self.args.gan_reg
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                     truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -540,7 +540,7 @@ class GANTrainer:
                 loss_d = losses.cal_d_loss(fake_score, real_score)
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
-                    losses.cal_g_loss(fake_score)
+                    losses.cal_g_loss(fake_score) * self.args.gan_reg
 
                 input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -590,7 +590,7 @@ class GANTrainer:
     def predict(self, model, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
-        self.model.generator = model
+        self.model = model
         self.model.generator.to(self.args.device)
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
