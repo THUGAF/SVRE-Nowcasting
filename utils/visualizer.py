@@ -112,12 +112,12 @@ def _plot_map_fig(tensor_slice, file_path, current_datetime, cmap, norm):
     tensor_slice = np.flip(tensor_slice.numpy(), axis=0)
     ax.imshow(tensor_slice, cmap=cmap, norm=norm, extent=AREA, transform=ccrs.PlateCarree())
 
+    xticks = np.arange(np.ceil(2 * AREA[0]) / 2, np.ceil(2 * AREA[1]) / 2, 0.5)
+    yticks = np.arange(np.ceil(2 * AREA[2]) / 2, np.ceil(2 * AREA[3]) / 2, 0.5)
     ax.set_xticks(np.arange(np.ceil(AREA[0]), np.ceil(AREA[1]), 1), crs=ccrs.PlateCarree())
     ax.set_yticks(np.arange(np.ceil(AREA[2]), np.ceil(AREA[3]), 1), crs=ccrs.PlateCarree())
-    ax.gridlines(crs=ccrs.PlateCarree(), 
-                xlocs=np.arange(np.ceil(2 * AREA[0]) / 2, np.ceil(2 * AREA[1]) / 2, 0.5), 
-                ylocs=np.arange(np.ceil(2 * AREA[2]) / 2, np.ceil(2 * AREA[3]) / 2, 0.5), 
-                draw_labels=False, linewidth=1, linestyle=':', color='k', alpha=0.8)
+    ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=False, 
+                 linewidth=1, linestyle=':', color='k', alpha=0.8)
 
     ax.xaxis.set_major_formatter(LongitudeFormatter())
     ax.yaxis.set_major_formatter(LatitudeFormatter())
