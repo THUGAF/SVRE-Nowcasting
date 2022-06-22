@@ -100,8 +100,7 @@ class SampleDataset(TrainingDataset):
 
 
 def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int, num_workers: int, 
-              train_ratio: float, valid_ratio: float, lon_range: List[int], lat_range: List[int], 
-              random_crop_num: int = 1):
+              train_ratio: float, valid_ratio: float, lon_range: List[int], lat_range: List[int]):
     r"""Load training and test data.
 
     Args:
