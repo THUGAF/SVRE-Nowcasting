@@ -20,8 +20,8 @@ parser = argparse.ArgumentParser(description='PySTEPS Basline')
 parser.add_argument('--data-path', type=str, default='/data/gaf/SBandCRUnzip')
 parser.add_argument('--output-path', type=str, default='results/PySTEPS')
 parser.add_argument('--sample-index', type=int, default=16840)
-parser.add_argument('--lon-range', type=int, nargs='+', default=[273, 529])
-parser.add_argument('--lat-range', type=int, nargs='+', default=[270, 526])
+parser.add_argument('--lon-range', type=int, nargs='+', default=[271, 527])
+parser.add_argument('--lat-range', type=int, nargs='+', default=[335, 591])
 parser.add_argument('--seed', type=int, default=2021)
 
 # input and output settings
