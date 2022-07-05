@@ -7,6 +7,7 @@ nohup python -u train.py \
     --train \
     --test \
     --predict \
+    --ensemble-members 4 \
     --sample-index 16840 \
     --max-iterations 100000 \
     --early-stopping \

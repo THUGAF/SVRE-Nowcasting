@@ -409,26 +409,29 @@ class GANTrainer:
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                pred = self.model(input_)
+                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
                 real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_score = self.model.discriminator(torch.cat([input_, pred.detach()]))
+                fake_scores = [self.model.discriminator(torch.cat([input_, pred.detach()])) for pred in preds]
                 
                 # Backward propagation
-                loss_d = losses.cal_d_loss(fake_score, real_score)
+                fake_score = torch.mean(torch.stack(fake_scores), dim=0)
+                loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
                 self.optimizer_d.zero_grad()
                 loss_d.backward()
                 self.optimizer_d.step()
                 self.scheduler_d.step()
 
-                fake_score = self.model.discriminator(torch.cat([input_, pred]))
+                fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+                fake_score = torch.mean(torch.stack(fake_scores), dim=0)
+                pred = torch.mean(torch.stack(preds), dim=0)
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
-                    losses.cal_g_loss(fake_score)
+                    losses.cal_g_loss(fake_score) * self.args.gan_reg
                 self.optimizer_g.zero_grad()
                 loss_g.backward()
                 self.optimizer_g.step()
                 self.scheduler_g.step()
-
+   
                 input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                 truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -460,13 +463,17 @@ class GANTrainer:
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
-                    pred = self.model(input_)
+                    preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
                     real_score = self.model.discriminator(torch.cat([input_, truth]))
-                    fake_score = self.model.discriminator(torch.cat([input_, pred]))
+                    fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+                    fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                     loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+
+                    pred = torch.mean(torch.stack(preds), dim=0)
                     loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                         losses.cv_loss(pred, truth) * self.args.var_reg + \
                         losses.cal_g_loss(fake_score) * self.args.gan_reg
+
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                     truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -534,10 +541,13 @@ class GANTrainer:
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                pred = self.model(input_)
+                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
                 real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_score = self.model.discriminator(torch.cat([input_, pred]))
+                fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+                fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                 loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+                
+                pred = torch.mean(torch.stack(preds), dim=0)
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
                     losses.cv_loss(pred, truth) * self.args.var_reg + \
                     losses.cal_g_loss(fake_score) * self.args.gan_reg
@@ -604,7 +614,8 @@ class GANTrainer:
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                 
-                pred = self.model(input_)
+                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+                pred = torch.mean(torch.stack(preds), dim=0)
                 input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                 pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                 truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -641,7 +652,8 @@ class GANTrainer:
             for tensor, _ in input_loader:
                 input_ = tensor.transpose(1, 0).to(self.args.device)
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred = self.model(input_)
+                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+                pred = torch.mean(torch.stack(preds), dim=0)
                 pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
         
         return pred

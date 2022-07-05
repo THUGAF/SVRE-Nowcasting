@@ -32,6 +32,7 @@ parser.add_argument('--train', action='store_true')
 parser.add_argument('--test', action='store_true')
 parser.add_argument('--predict', action='store_true')
 parser.add_argument('--early-stopping', action='store_true')
+parser.add_argument('--ensemble-members', type=int, default=4)
 parser.add_argument('--batch-size', type=int, default=4)
 parser.add_argument('--max-iterations', type=int, default=100000)
 parser.add_argument('--start-iterations', type=int, default=0)
@@ -81,6 +82,7 @@ def main():
     if args.model == 'AttnUNet':
         model = AttnUNet(args.input_steps, args.forecast_steps)
     if args.add_gan:
+        model = AttnUNet(args.input_steps, args.forecast_steps, add_noise=True)
         model = GAN(model, args)
  
     # Load data
