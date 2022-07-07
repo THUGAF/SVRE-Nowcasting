@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=0 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
     --output-path results/AttnUNet_CV \

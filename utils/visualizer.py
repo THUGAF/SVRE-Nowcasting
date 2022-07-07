@@ -1,6 +1,7 @@
 import os
 import datetime
 
+import torch
 import numpy as np
 import imageio
 import matplotlib.pyplot as plt
@@ -97,6 +98,9 @@ def _plot_map_figs(tensor, root, timestamp, stage, type, cmap, norm):
     
     # make gif
     imageio.mimsave('{}/{}.gif'.format(path, type), image_list, 'GIF', duration=0.2)
+
+    # save tensor
+    torch.save(tensor, '{}/{}.pt'.format(path, type))
 
 
 def _plot_map_fig(tensor_slice, file_path, current_datetime, cmap, norm):
