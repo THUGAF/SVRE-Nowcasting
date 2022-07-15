@@ -81,6 +81,10 @@ def main():
     # Set the model
     if args.model == 'AttnUNet':
         model = AttnUNet(args.input_steps, args.forecast_steps)
+    elif args.model == 'EncoderForecaster': 
+        model = EncoderForecaster(args.forecast_steps, 1, 1, [64, 64, 64])
+    elif args.model == 'SmaAt_UNet': 
+        model = SmaAt_UNet(args.input_steps, args.forecast_steps)
     if args.add_gan:
         model = AttnUNet(args.input_steps, args.forecast_steps, add_noise=True)
         model = GAN(model, args)

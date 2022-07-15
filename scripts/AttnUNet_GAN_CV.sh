@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=2 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
     --output-path results/AttnUNet_GAN_CV \
@@ -11,7 +11,7 @@ nohup python -u train.py \
     --sample-index 16840 \
     --max-iterations 100000 \
     --early-stopping \
-    --gan-reg 0.2 \
+    --gan-reg 0.1 \
     --var-reg 0.1 \
     --batch-size 16 \
     --num-threads 8 \
