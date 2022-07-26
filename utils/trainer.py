@@ -733,6 +733,7 @@ class Assimilation:
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'nonobs_metrics.csv'), float_format='%.8f', index=False)
             visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'nonobs')
+            print('No obs done.')
 
             # forecast with pure observation
             pred_obs = []
@@ -753,7 +754,8 @@ class Assimilation:
             metrics = self.evaluate(pred_obs, truth, metrics)
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'obs_metrics.csv'), float_format='%.8f', index=False)
-            visualizer.plot_map(input_, pred_rev, truth, timestamp, self.args.output_path, 'obs')
+            visualizer.plot_map(input_, pred_obs, truth, timestamp, self.args.output_path, 'obs')
+            print('Pure obs done.')
 
             # forecast with data assimilation
             # width = self.args.lon_range[1] - self.args.lon_range[0]
