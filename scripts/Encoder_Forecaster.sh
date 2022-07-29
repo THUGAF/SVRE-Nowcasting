@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=3 \
+CUDA_VISIBLE_DEVICES=2 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
     --output-path results/Encoder_Forecaster \

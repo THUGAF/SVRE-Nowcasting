@@ -7,6 +7,7 @@ logs/
 results/
 test/
 data/
+localutils/
 
 # C extensions
 *.so
