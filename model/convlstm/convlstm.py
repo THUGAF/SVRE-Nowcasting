@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-from torch.nn.modules.pixelshuffle import PixelShuffle, PixelUnshuffle
 from .layers import ConvLSTMCell, Down, Up
 
 
@@ -17,8 +16,7 @@ class Encoder(nn.Module):
         super(Encoder, self).__init__()
         self.num_layers = len(hidden_channels)
 
-        self.space2depth = PixelUnshuffle(downscale_factor=2)
-        self.down0 = Down(in_channels * 4, hidden_channels[0])
+        self.down0 = Down(in_channels, hidden_channels[0])
         self.rnn0 = ConvLSTMCell(hidden_channels[0], hidden_channels[0])
 
         for i in range(1, self.num_layers):
@@ -29,7 +27,7 @@ class Encoder(nn.Module):
         # x: 5D tensor (S, B, C, H, W)
         h_list = [None] * self.num_layers
         c_list = [None] * self.num_layers
-        x = self.space2depth(x)
+
         for i in range(x.size(0)):
             y = self.down0(x[i])
             h_list[0], c_list[0] = self.rnn0(y, h_list[0], c_list[0])
@@ -60,8 +58,7 @@ class Forecaster(nn.Module):
             setattr(self, 'up' + str(self.num_layers - i), Up(hidden_channels[-i], hidden_channels[-i-1]))
         
         self.rnn0 = ConvLSTMCell(hidden_channels[0], hidden_channels[0])
-        self.up0 = Up(hidden_channels[0], out_channels * 4)
-        self.depth2space = PixelShuffle(upscale_factor=2)
+        self.up0 = Up(hidden_channels[0], out_channels)
     
     def forward(self, h_list, c_list):
         output = []
@@ -73,7 +70,6 @@ class Forecaster(nn.Module):
             for j in range(1, self.num_layers):
                 h_list[-j-1], c_list[-j-1] = getattr(self, 'rnn' + str(self.num_layers - j - 1))(y, h_list[-j-1], h_list[-j-1])
                 y = getattr(self, 'up' + str(self.num_layers - j - 1))(h_list[-j-1])
-            y = self.depth2space(y)
             output.append(y)
     
         # output: 5D tensor (S_out, B, C, H, W)

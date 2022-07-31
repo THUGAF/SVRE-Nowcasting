@@ -1,7 +1,7 @@
-CUDA_VISIBLE_DEVICES=2 \
+CUDA_VISIBLE_DEVICES=0 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
-    --output-path results/Encoder_Forecaster \
+    --output-path results/ConvLSTM \
     --model EncoderForecaster \
     --train \
     --test \
@@ -13,4 +13,4 @@ nohup python -u train.py \
     --num-threads 8 \
     --num-workers 8 \
     --display-interval 20 \
-    > Encoder_Forecaster.log 2>&1 &
+    > ConvLSTM.log 2>&1 &
