@@ -9,9 +9,9 @@ nohup python -u train.py \
     --predict \
     --ensemble-members 3 \
     --sample-index 16840 \
-    --max-iterations 100000 \
+    --max-iterations 50000 \
     --early-stopping \
-    --gan-reg 0.15 \
+    --gan-reg 0.05 \
     --var-reg 0.1 \
     --batch-size 16 \
     --num-threads 8 \

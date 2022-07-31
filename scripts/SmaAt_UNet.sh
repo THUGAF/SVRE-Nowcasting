@@ -7,7 +7,7 @@ nohup python -u train.py \
     --test \
     --predict \
     --sample-index 16840 \
-    --max-iterations 100000 \
+    --max-iterations 50000 \
     --early-stopping \
     --batch-size 16 \
     --num-threads 8 \
