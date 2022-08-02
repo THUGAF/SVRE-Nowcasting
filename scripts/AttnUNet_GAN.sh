@@ -11,8 +11,7 @@ nohup python -u train.py \
     --sample-index 16840 \
     --max-iterations 50000 \
     --early-stopping \
-    --gan-reg 0.05 \
-    --var-reg 0.05 \
+    --gan-reg 0.1 \
     --batch-size 16 \
     --num-threads 8 \
     --num-workers 8 \

@@ -3,6 +3,9 @@ import argparse
 import warnings
 import torch
 
+import sys
+sys.path.append('/home/gaf/Codes/GASVRE-Nowcasting')
+
 from model import *
 from postprocessing import Assimilation
 import utils.dataloader as dataloader
@@ -20,6 +23,7 @@ parser.add_argument('--sample-index', type=int, default=16840)
 parser.add_argument('--seed', type=int, default=2022)
 
 # nowcasting settings
+parser.add_argument('--mode', type=str, nargs='+', default=['nonobs', 'obs'])
 parser.add_argument('--resolution', type=float, default=6.0, help='Time resolution (min)')
 parser.add_argument('--lon-range', type=int, nargs='+', default=[271, 527])
 parser.add_argument('--lat-range', type=int, nargs='+', default=[335, 591])
@@ -33,6 +37,7 @@ args = parser.parse_args()
 
 
 def main():
+    args.mode = ['linear_correction']
     # Display global settings
     print('Temporal resolution: {} min'.format(args.resolution))
     print('Spatial resolution: 1.0 km')

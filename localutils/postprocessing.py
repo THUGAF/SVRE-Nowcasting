@@ -2,11 +2,37 @@ import os
 import torch
 import numpy as np
 import pandas as pd
-import utils.evaluation as evaluation
 
+from statsmodels.tsa.vector_ar.var_model import VAR
+
+import utils.evaluation as evaluation
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.scaler as scaler
+
+
+class LinearCorrection:
+    def __init__(self, width, height, model, x0):
+        self.width = width
+        self.height = height
+        self.model = model
+        self.x0 = x0
+        
+    def forward(self, num_steps, ys):
+        X = torch.zeros(num_steps, num_steps, 1, 1, self.width, self.height)
+        pred = self.model(self.x0)
+        fore = pred
+        for i in range(num_steps):
+            X[i] = self.correct(pred, fore, ys[i])
+            if i < num_steps:
+                fore = self.model(torch.cat([self.x0[i + 1:], ys[:i + 1]]))
+        return X
+    
+    def correct(self, pred, fore, truth):
+        ratio = truth / fore[0]
+        ratio = torch.clip(ratio, 0.8, 1.2)
+        pred = pred * ratio
+        return pred
 
 
 class KF:
@@ -107,7 +133,6 @@ class EnKF:
         return X_for, P_for
 
 
-
 class Assimilation:
     def __init__(self, args):
         self.args = args
@@ -130,82 +155,130 @@ class Assimilation:
         metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
         return metrics
     
-    def da_forward(self, x):
-        x = x[-1].flatten().expand()
-        y = self.model(x)
-        y = y[0].flatten()
-        return y[0]
-
-    def predict(self, model, sample_loader):
+    def nonobs(self, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0)
+            timestamp = timestamp.transpose(1, 0)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            
+            pred = self.model(input_)
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+
+        metrics = self.evaluate(pred_rev, truth_rev, metrics)
+        df = pd.DataFrame(data=metrics)
+        df.to_csv(os.path.join(self.args.output_path, 'nonobs_metrics.csv'), float_format='%.8f', index=False)
+        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'nonobs')
+        print('No obs done.')
+    
+    def obs(self, sample_loader):
+        metrics = {}
+        metrics['Time'] = np.linspace(6, 60, 10)
+        pred_obs = []
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0)
+            timestamp = timestamp.transpose(1, 0)
+            truth = tensor[self.args.input_steps:]
+            for s in range(self.args.forecast_steps):
+                input_ = tensor[s: s + self.args.input_steps]
+                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+
+                pred = self.model(input_)
+                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+                pred_obs.append(pred_rev[0])
+        
+        input_ = tensor[:self.args.input_steps]
+        pred_obs = torch.stack(pred_obs)
+        metrics = self.evaluate(pred_obs, truth, metrics)
+        df = pd.DataFrame(data=metrics)
+        df.to_csv(os.path.join(self.args.output_path, 'obs_metrics.csv'), float_format='%.8f', index=False)
+        visualizer.plot_map(input_, pred_obs, truth, timestamp, self.args.output_path, 'obs')
+        print('Pure obs done.')
+    
+    def linear_correction(self, sample_loader):
+        metrics = {}
+        metrics['Time'] = np.linspace(6, 60, 10)
+        width = self.args.lon_range[1] - self.args.lon_range[0]
+        height = self.args.lat_range[1] - self.args.lat_range[0]
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0)
+            timestamp = timestamp.transpose(1, 0)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+
+            da_model = LinearCorrection(width, height, self.model, input_)
+            pred_da = da_model.forward(self.args.forecast_steps, truth)[-1]
+
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred_da, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+        
+        metrics = self.evaluate(pred_rev, truth_rev, metrics)
+        df = pd.DataFrame(data=metrics)
+        df.to_csv(os.path.join(self.args.output_path, 'linear_metrics.csv'), float_format='%.8f', index=False)
+        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'linear')
+            
+
+    def enkf(self, sample_loader):
+        metrics = {}
+        metrics['Time'] = np.linspace(6, 60, 10)
+        width = self.args.lon_range[1] - self.args.lon_range[0]
+        height = self.args.lat_range[1] - self.args.lat_range[0]
+        pred_da = []
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0)
+            timestamp = timestamp.transpose(1, 0)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            
+            ys = torch.stack([truth[s].flatten() for s in range(self.args.forecast_steps)])
+            
+            da_model = EnKF(width * height * self.args.forecast_steps, 5, self.model, torch.flatten(input_))
+            pred, _ = da_model.forward(self.args.forecast_steps, ys)
+            pred = torch.mean(pred, dim=1).view(self.args.forecast_steps, self.args.forecast_steps, -1)
+
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+
+            for s in range(self.args.forecast_steps):
+                pred_da.append(pred_rev[s, s].view(1, 1, width, height))
+        
+        pred_da = torch.stack(pred_da)
+        metrics = self.evaluate(pred_da, truth_rev, metrics)
+        df = pd.DataFrame(data=metrics)
+        df.to_csv(os.path.join(self.args.output_path, 'enkf_metrics.csv'), float_format='%.8f', index=False)
+        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'enkf')
+
+    def predict(self, model, sample_loader):
         self.model = model
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         print('\n[Predict]')
         with torch.no_grad():
             # direct forecast with no observation
-            for tensor, timestamp in sample_loader:
-                tensor = tensor.transpose(1, 0)
-                timestamp = timestamp.transpose(1, 0)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                
-                pred = self.model(input_)
-                input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
-
-            metrics = self.evaluate(pred_rev, truth_rev, metrics)
-            df = pd.DataFrame(data=metrics)
-            df.to_csv(os.path.join(self.args.output_path, 'nonobs_metrics.csv'), float_format='%.8f', index=False)
-            visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'nonobs')
-            print('No obs done.')
+            if 'nonobs' in self.args.mode:
+                self.nonobs(sample_loader)
 
             # forecast with pure observation
-            pred_obs = []
-            for tensor, timestamp in sample_loader:
-                tensor = tensor.transpose(1, 0)
-                timestamp = timestamp.transpose(1, 0)
-                truth = tensor[self.args.input_steps:]
-                for s in range(self.args.forecast_steps):
-                    input_ = tensor[s: s + self.args.input_steps]
-                    input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-
-                    pred = self.model(input_)
-                    pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                    pred_obs.append(pred_rev[0])
+            if 'obs' in self.args.mode:
+                self.obs(sample_loader)
             
-            input_ = tensor[:self.args.input_steps]
-            pred_obs = torch.stack(pred_obs)
-            metrics = self.evaluate(pred_obs, truth, metrics)
-            df = pd.DataFrame(data=metrics)
-            df.to_csv(os.path.join(self.args.output_path, 'obs_metrics.csv'), float_format='%.8f', index=False)
-            visualizer.plot_map(input_, pred_obs, truth, timestamp, self.args.output_path, 'obs')
-            print('Pure obs done.')
+            # forecast with linear correction observation
+            if 'linear_correction' in self.args.mode:
+                self.linear_correction(sample_loader)
 
             # forecast with data assimilation
-            # width = self.args.lon_range[1] - self.args.lon_range[0]
-            # height = self.args.lat_range[1] - self.args.lat_range[0]
-            # pred_da = []
-            # for tensor, timestamp in sample_loader:
-            #     tensor = tensor.transpose(1, 0)
-            #     timestamp = timestamp.transpose(1, 0)
-            #     input_ = tensor[:self.args.input_steps]
-            #     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-            #     ys = torch.stack([truth[s].flatten() for s in range(self.args.forecast_steps)])
-                
-            #     da_model = EnKF(width * height * self.args.forecast_steps, 5, self.da_forward, x0=torch.flatten(input_))
-            #     pred, _ = da_model.forward(self.args.forecast_steps, ys)
-            #     pred = torch.mean(pred, dim=1).view(self.args.forecast_steps, self.args.forecast_steps, -1)
-            #     pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-            #     for s in range(self.args.forecast_steps):
-            #         pred_da.append(pred_rev[s, s].view(1, 1, width, height))
+            if 'enkf' in self.args.mode:
+                self.enkf(sample_loader)
             
-            # pred_da = torch.stack(pred_da)
-            # metrics = self.evaluate(pred_da, truth_rev, metrics)
-            # df = pd.DataFrame(data=metrics)
-            # df.to_csv(os.path.join(self.args.output_path, 'enkf_metrics.csv'), float_format='%.8f', index=False)
-            # visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'enkf')
