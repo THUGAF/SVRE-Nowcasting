@@ -68,10 +68,10 @@ if __name__ == '__main__':
     plot_taylor_diagram('results', 
                         ['AttnUNet', 'AttnUNet_CV', 'AttnUNet_GAN', 'AttnUNet_GAN_CV'], 
                         ['AttnUNet', 'AttnUNet+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'localutils/taylor_ablation.jpg', std_range=[5, 15], std_num=6, 
+                        'localutils/taylor_ablation.jpg', std_range=[7, 17], std_num=6, 
                         colors=colors.colors)
     plot_taylor_diagram('results',
                         ['PySTEPS', 'ConvLSTM', 'SmaAt_UNet', 'AttnUNet_GAN_CV'], 
-                        ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE'],
-                        'localutils/taylor_comparison.jpg', std_range=[5, 15], std_num=6, 
+                        ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE (ours)'],
+                        'localutils/taylor_comparison.jpg', std_range=[7, 17], std_num=6, 
                         colors=colors.colors)
