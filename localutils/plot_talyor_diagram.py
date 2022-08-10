@@ -11,7 +11,7 @@ plt.rcParams['font.sans-serif'] = 'Arial'
 def plot_taylor_diagram(root: str, paths: List, models: List, target_path: str, std_range: List, std_num: int, colors: List):
     fig = plt.figure(figsize=(10, 4), dpi=600)
 
-    truth = torch.load(os.path.join(root, paths[-1], 'sample', 'truth', 'truth.pt'))
+    truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))
     truth_30min, truth_60min = truth[4, 0, 0], truth[9, 0, 0]
     ref_std_30min, ref_std_60min = torch.std(truth_30min), torch.std(truth_60min)
 
@@ -25,7 +25,7 @@ def plot_taylor_diagram(root: str, paths: List, models: List, target_path: str, 
                                          label='Observation', ylabel_text='$\sigma_{\hat{y}}$')
 
     for i, path in enumerate(paths):
-        pred = torch.load(os.path.join(root, path, 'sample', 'pred', 'pred.pt'))
+        pred = torch.load(os.path.join(root, path, 'pred', 'pred.pt'))
         pred_30min, pred_60min = pred[4, 0, 0], pred[9, 0, 0]
         stddev_30min, stddev_60min = torch.std(pred_30min), torch.std(pred_60min)
         corrcoef_30min = torch.corrcoef(torch.stack([truth_30min.flatten(), pred_30min.flatten()]))[0, 1]
@@ -66,12 +66,17 @@ def plot_taylor_diagram(root: str, paths: List, models: List, target_path: str, 
 if __name__ == '__main__':
     colors = cm.get_cmap('tab10')
     plot_taylor_diagram('results', 
-                        ['AttnUNet', 'AttnUNet_CV', 'AttnUNet_GAN', 'AttnUNet_GAN_CV'], 
+                        ['AttnUNet/sample', 'AttnUNet_CV/sample', 'AttnUNet_GAN/sample', 'AttnUNet_GAN_CV/sample'], 
                         ['AttnUNet', 'AttnUNet+SVRE', 'AGAN', 'AGAN+SVRE'], 
                         'localutils/taylor_ablation.jpg', std_range=[7, 17], std_num=6, 
                         colors=colors.colors)
     plot_taylor_diagram('results',
-                        ['PySTEPS', 'ConvLSTM', 'SmaAt_UNet', 'AttnUNet_GAN_CV'], 
+                        ['PySTEPS/sample', 'ConvLSTM/sample', 'SmaAt_UNet/sample', 'AttnUNet_GAN_CV/sample'], 
                         ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE (ours)'],
                         'localutils/taylor_comparison.jpg', std_range=[7, 17], std_num=6, 
+                        colors=colors.colors)
+    plot_taylor_diagram('results/Assimilation', 
+                        ['nonobs', 'obs', 'linear'], 
+                        ['AttnUNet', 'AttnUNet+Obs', 'AttnUNet+Linear'],
+                        'localutils/taylor_assimilation.jpg', std_range=[7, 17], std_num=6, 
                         colors=colors.colors)

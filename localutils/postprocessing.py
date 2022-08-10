@@ -28,8 +28,8 @@ class LinearCorrection:
                 fore = self.model(torch.cat([self.x0[i + 1:], ys[:i + 1]]))
         return X
     
-    def correct(self, pred, fore, truth):
-        ratio = truth / fore[0]
+    def correct(self, pred, fore, truth, eps=1e-6):
+        ratio = truth / (fore[0] + eps)
         ratio = torch.clip(ratio, 0.8, 1.2)
         pred = pred * ratio
         return pred

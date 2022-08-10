@@ -37,7 +37,7 @@ args = parser.parse_args()
 
 
 def main():
-    args.mode = ['linear_correction']
+    # args.mode = ['linear_correction']
     # Display global settings
     print('Temporal resolution: {} min'.format(args.resolution))
     print('Spatial resolution: 1.0 km')
