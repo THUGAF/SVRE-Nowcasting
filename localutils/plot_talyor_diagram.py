@@ -65,18 +65,18 @@ def plot_taylor_diagram(root: str, paths: List, models: List, target_path: str, 
 
 if __name__ == '__main__':
     colors = cm.get_cmap('tab10')
+    # plot_taylor_diagram('results', 
+    #                     ['AttnUNet/sample', 'AttnUNet_CV/sample', 'AttnUNet_GAN/sample', 'AttnUNet_GAN_CV/sample'], 
+    #                     ['AttnUNet', 'AttnUNet+SVRE', 'AGAN', 'AGAN+SVRE'], 
+    #                     'localutils/taylor_ablation.jpg', std_range=[7, 17], std_num=6, 
+    #                     colors=colors.colors)
+    # plot_taylor_diagram('results',
+    #                     ['PySTEPS/sample', 'ConvLSTM/sample', 'SmaAt_UNet/sample', 'AttnUNet_GAN_CV/sample'], 
+    #                     ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE (ours)'],
+    #                     'localutils/taylor_comparison.jpg', std_range=[7, 17], std_num=6, 
+    #                     colors=colors.colors)
     plot_taylor_diagram('results', 
-                        ['AttnUNet/sample', 'AttnUNet_CV/sample', 'AttnUNet_GAN/sample', 'AttnUNet_GAN_CV/sample'], 
-                        ['AttnUNet', 'AttnUNet+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'localutils/taylor_ablation.jpg', std_range=[7, 17], std_num=6, 
-                        colors=colors.colors)
-    plot_taylor_diagram('results',
-                        ['PySTEPS/sample', 'ConvLSTM/sample', 'SmaAt_UNet/sample', 'AttnUNet_GAN_CV/sample'], 
-                        ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE (ours)'],
-                        'localutils/taylor_comparison.jpg', std_range=[7, 17], std_num=6, 
-                        colors=colors.colors)
-    plot_taylor_diagram('results/Assimilation', 
-                        ['nonobs', 'obs', 'linear'], 
-                        ['AttnUNet', 'AttnUNet+Obs', 'AttnUNet+Linear'],
+                        ['PySTEPS/sample', 'Assimilation/nonobs', 'Assimilation/linear'], 
+                        ['PySTEPS', 'AttnUNet', 'AttnUNet+DA'],
                         'localutils/taylor_assimilation.jpg', std_range=[7, 17], std_num=6, 
                         colors=colors.colors)

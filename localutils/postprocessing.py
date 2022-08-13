@@ -3,7 +3,7 @@ import torch
 import numpy as np
 import pandas as pd
 
-from statsmodels.tsa.vector_ar.var_model import VAR
+# from statsmodels.tsa.vector_ar.var_model import VAR
 
 import utils.evaluation as evaluation
 import utils.visualizer as visualizer
@@ -36,7 +36,7 @@ class LinearCorrection:
 
 
 class KF:
-    def __init__(self, num_dims, M, x0=None):
+    def __init__(self, num_dims, M, input_, x0=None):
         self.num_dims = num_dims
         self.M = M
         self.H = torch.eye(num_dims)
@@ -49,6 +49,7 @@ class KF:
             self.x0 = x0
         self.x0.requires_grad = True
         self.P0 = torch.eye(num_dims, requires_grad=True)
+        self.input_ = input_
 
     def forward(self, num_steps, ys):
         X = torch.zeros(num_steps, self.num_dims)
@@ -56,7 +57,7 @@ class KF:
         x_for, P_for = self.x0, self.P0
         for i in range(num_steps):
             x_ana, P_ana = self.analysis(x_for, P_for, ys[i])
-            x_for, P_for = self.forecast(x_ana, P_ana)
+            x_for, P_for = self.forecast(x_ana, P_ana, i)
             X[i], P[i] = x_for, P_for
         return X, P
 
@@ -66,8 +67,16 @@ class KF:
         P_ana = (torch.eye(self.num_dims) - K @ self.H) @ P_for
         return x_ana, P_ana
 
-    def forecast(self, x_ana, P_ana):
-        x_for = self.M(x_ana)
+    def forecast(self, x_ana, P_ana, step):
+        num_steps = self.X.size(0)
+        width, height = self.input_.size(3), self.input_.size(4)
+        if step == 0:
+            x_in = torch.cat([self.input_[step + 1:], x_ana.view(1, 1, 1, width, height)])
+        elif step > 0 and step < num_steps - 1:
+            x_in = torch.cat([self.input_[step + 1:], self.X[:step].view(-1, 1, 1, width, height), x_ana.view(1, 1, 1, width, height)])
+        else:
+            x_in = torch.cat([self.X[:step].view(-1, 1, 1, width, height), x_ana.view(1, 1, 1, width, height)])
+        x_for = self.M(x_in)[0].flatten()
         # Calculate the jacobian matrix
         M_jacob = torch.zeros(self.num_dims, self.num_dims)
         for n in range(self.num_dims):
@@ -81,31 +90,32 @@ class KF:
 
 
 class EnKF:
-    def __init__(self, num_dims, num_ensemble, M, x0=None):
+    def __init__(self, num_dims, num_ensemble, M, input_, X0=None):
         self.num_dims = num_dims
         self.M = M
         self.H = torch.eye(num_dims)
-        self.R = torch.eye(num_dims)
-        if x0 is None:
-            self.x0 = torch.zeros(num_ensemble, num_dims)
+        self.R = torch.eye(num_dims) * 0.5
+        if X0 is None:
+            self.X0 = torch.zeros(num_ensemble, num_dims)
         else:
-            assert num_dims == x0.size(1)
-            assert num_ensemble == x0.size(0)
-            self.x0 = x0
-        self.x0.requires_grad = True
-        self.P0 = torch.eye(num_dims, requires_grad=True)
+            assert num_dims == X0.size(1)
+            assert num_ensemble == X0.size(0)
+            self.X0 = X0
+        self.P0 = torch.eye(num_dims)
         self.num_ensemble = num_ensemble
+        self.input_ = input_
     
     def forward(self, num_steps, ys):
-        X = torch.zeros(num_steps, self.num_ensemble, self.num_dims)
-        P = torch.zeros(num_steps, self.num_dims, self.num_dims)
-        X_for, P_for = self.x0, self.P0
+        self.X = torch.zeros(num_steps, self.num_ensemble, self.num_dims)
+        self.P = torch.zeros(num_steps, self.num_dims, self.num_dims)
+        X_for, P_for = self.X0, self.P0
         for i in range(num_steps):
+            print('Step {}/{}'.format(i + 1, num_steps))
             Y, Ru = self.perturb(ys[i])
-            X_ana, P_ana = self.analysis(X_for, P_for, Y, Ru)
-            X_for, P_for = self.forecast(X_ana, P_ana)
-            X[i], P[i] = X_for, P_for
-        return X, P
+            X_ana, _ = self.analysis(X_for, P_for, Y, Ru)
+            X_for, P_for = self.forecast(X_ana, i)
+            self.X[i], self.P[i] = X_for, P_for
+        return self.X, self.P
 
     def perturb(self, y):
         mu = np.zeros(self.num_dims)
@@ -119,14 +129,26 @@ class EnKF:
 
     def analysis(self, X_for, P_for, Y, Ru):
         Ku = P_for @ self.H @ np.linalg.inv(self.H @ P_for @ self.H.T + Ru)
-        X_ana = torch.stack([X_for[m] + Ku @ (Y[m] - self.H @ X_for[m]) for m in range(self.num_ensemble)])
+        X_ana = torch.zeros_like(X_for)
+        for m in range(self.num_ensemble):
+            X_ana[m] = X_for[m] + Ku @ (Y[m] - self.H @ X_for[m])
         x_ana_bar = torch.mean(X_ana, dim=0)
         X_ana_anomly = X_ana - x_ana_bar.unsqueeze(0)
         P_ana = (X_ana_anomly.T @ X_ana_anomly) / (self.num_ensemble - 1)
         return X_ana, P_ana
 
-    def forecast(self, X_ana, P_ana):
-        X_for = torch.stack([self.M(X_ana[m]) for m in range(self.num_ensemble)])
+    def forecast(self, X_ana, step):
+        num_steps = self.X.size(0)
+        width, height = self.input_.size(3), self.input_.size(4)
+        X_for = torch.zeros_like(X_ana)
+        for m in range(self.num_ensemble):
+            if step == 0:
+                X_in = torch.cat([self.input_[step + 1:], X_ana[m].view(1, 1, 1, width, height)])
+            elif step > 0 and step < num_steps - 1:
+                X_in = torch.cat([self.input_[step + 1:], self.X[:step, m].view(-1, 1, 1, width, height), X_ana[m].view(1, 1, 1, width, height)])
+            else:
+                X_in = torch.cat([self.X[:step, m].view(-1, 1, 1, width, height), X_ana[m].view(1, 1, 1, width, height)])
+            X_for[m] = self.M(X_in)[0].flatten()
         x_for_bar = torch.mean(X_for, dim=0)
         X_for_anomly = X_for - x_for_bar.unsqueeze(0)
         P_for = (X_for_anomly.T @ X_for_anomly) / (self.num_ensemble - 1)
@@ -225,14 +247,13 @@ class Assimilation:
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'linear_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'linear')
-            
-
+    
     def enkf(self, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
         width = self.args.lon_range[1] - self.args.lon_range[0]
         height = self.args.lat_range[1] - self.args.lat_range[0]
-        pred_da = []
+
         for tensor, timestamp in sample_loader:
             tensor = tensor.transpose(1, 0)
             timestamp = timestamp.transpose(1, 0)
@@ -242,20 +263,17 @@ class Assimilation:
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             
             ys = torch.stack([truth[s].flatten() for s in range(self.args.forecast_steps)])
-            
-            da_model = EnKF(width * height * self.args.forecast_steps, 5, self.model, torch.flatten(input_))
+            X0 = torch.flatten(input_[-1]).expand(self.args.num_ensemble, -1)
+
+            da_model = EnKF(width * height, self.args.num_ensemble, self.model, input_, X0)
             pred, _ = da_model.forward(self.args.forecast_steps, ys)
-            pred = torch.mean(pred, dim=1).view(self.args.forecast_steps, self.args.forecast_steps, -1)
+            pred = torch.mean(pred, dim=1).view(self.args.forecast_steps, 1, 1, width, height)
 
             input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
             truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-            for s in range(self.args.forecast_steps):
-                pred_da.append(pred_rev[s, s].view(1, 1, width, height))
-        
-        pred_da = torch.stack(pred_da)
-        metrics = self.evaluate(pred_da, truth_rev, metrics)
+        metrics = self.evaluate(pred_rev, truth_rev, metrics)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'enkf_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'enkf')
