@@ -4,7 +4,7 @@ import warnings
 import torch
 
 from model import *
-from utils.trainer import Trainer, GANTrainer
+from utils.trainer import *
 import utils.dataloader as dataloader
 
 
@@ -25,6 +25,7 @@ parser.add_argument('--sample-index', type=int, default=0)
 # model settings
 parser.add_argument('--model', type=str, default='AttnUNet')
 parser.add_argument('--add-gan', action='store_true')
+parser.add_argument('--rolling', action='store_true')
 
 # training settings
 parser.add_argument('--pretrain', action='store_true')
@@ -79,15 +80,26 @@ def main():
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
 
     # Set the model
-    if args.model == 'AttnUNet':
-        model = AttnUNet(args.input_steps, args.forecast_steps)
-    elif args.model == 'EncoderForecaster': 
-        model = EncoderForecaster(args.forecast_steps, 1, 1, [64, 64, 64, 64])
-    elif args.model == 'SmaAt_UNet': 
-        model = SmaAt_UNet(args.input_steps, args.forecast_steps)
-    if args.add_gan:
-        model = AttnUNet(args.input_steps, args.forecast_steps, add_noise=True)
-        model = GAN(model, args)
+    if args.rolling:
+        if args.model == 'AttnUNet':
+            model = AttnUNet(args.input_steps, 1)
+        elif args.model == 'EncoderForecaster':
+            model = EncoderForecaster(1, 1, 1, [64, 64, 64, 64])
+        elif args.model == 'SmaAt_UNet':
+            model = SmaAt_UNet(args.input_steps, 1)
+        if args.add_gan:
+            model = AttnUNet(args.input_steps, 1, add_noise=True)
+            model = GAN(model, args)
+    else:
+        if args.model == 'AttnUNet':
+            model = AttnUNet(args.input_steps, args.forecast_steps)
+        elif args.model == 'EncoderForecaster': 
+            model = EncoderForecaster(args.forecast_steps, 1, 1, [64, 64, 64, 64])
+        elif args.model == 'SmaAt_UNet': 
+            model = SmaAt_UNet(args.input_steps, args.forecast_steps)
+        if args.add_gan:
+            model = AttnUNet(args.input_steps, args.forecast_steps, add_noise=True)
+            model = GAN(model, args)
  
     # Load data
     if args.train or args.test:
@@ -104,10 +116,16 @@ def main():
         os.mkdir(args.output_path)
     
     # Set trainer
-    if args.add_gan:
-        trainer = GANTrainer(args)
+    if args.rolling:
+        if args.add_gan:
+            trainer = RollingGANTrainer(args)
+        else:
+            trainer = RollingTrainer(args)
     else:
-        trainer = Trainer(args)
+        if args.add_gan:
+            trainer = GANTrainer(args)
+        else:
+            trainer = Trainer(args)
     if args.train or args.test:
         trainer.fit(model, train_loader, val_loader, test_loader)
     if args.predict:
