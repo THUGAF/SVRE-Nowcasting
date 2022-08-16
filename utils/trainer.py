@@ -1323,3 +1323,4 @@ class RollingGANTrainer:
     def load_checkpoint(self, filename='checkpoint.pt'):
         states = torch.load(os.path.join(self.args.output_path, filename), map_location=self.args.device)
         return states
+        

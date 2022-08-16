@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn.functional as F
-import utils.pytorch_ssim as pytorch_ssim
+import utils.ssim as ssim
 import utils.scaler as scaler
 
 
@@ -150,8 +150,8 @@ def evaluate_ssim(pred, truth):
 
     ssim_list = []
     for s in range(seq_len):
-        ssim = pytorch_ssim.ssim(pred[s], truth[s])
-        ssim_list.append(ssim)
+        ssim_ = ssim.ssim(pred[s], truth[s])
+        ssim_list.append(ssim_)
 
     return np.array(ssim_list)
 
