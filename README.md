@@ -16,8 +16,7 @@ This repo contains a PyTorch implementation of the **Generative Adversarial Spat
 
 * Scaling blocks
 
-<img src="img/G-ScalingBlock.png" width="300" />
-<img src="img/D-ScalingBlock.png" width="300" />
+<img src="img/G-ScalingBlock.png" width="400" /> <img src="img/D-ScalingBlock.png" width="400" />
 
 ### Performance overview
 
