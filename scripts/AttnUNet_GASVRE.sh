@@ -1,7 +1,7 @@
-CUDA_VISIBLE_DEVICES=2 \
+CUDA_VISIBLE_DEVICES=0 \
 nohup python -u train.py \
     --data-path /data/gaf/SBandCRUnzip \
-    --output-path results/AttnUNet_GAN_CV \
+    --output-path results/AttnUNet_GASVRE \
     --model AttnUNet \
     --add-gan \
     --train \
@@ -17,4 +17,4 @@ nohup python -u train.py \
     --num-threads 8 \
     --num-workers 8 \
     --display-interval 20 \
-    > AttnUNet_GAN_CV.log 2>&1 &
+    > AttnUNet_GASVRE.log 2>&1 &

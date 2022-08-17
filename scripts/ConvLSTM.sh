@@ -9,7 +9,7 @@ nohup python -u train.py \
     --sample-index 16840 \
     --max-iterations 50000 \
     --early-stopping \
-    --batch-size 8 \
+    --batch-size 16 \
     --num-threads 8 \
     --num-workers 8 \
     --display-interval 20 \
