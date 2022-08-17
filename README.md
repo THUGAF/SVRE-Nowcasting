@@ -15,8 +15,9 @@ This repo contains a PyTorch implementation of the **Generative Adversarial Spat
 ![Discriminator](img/Discriminator.png)
 
 * Scaling blocks
-![G-ScalingBlock](img/G-ScalingBlock.png)
-![D-ScalingBlock](img/D-ScalingBlock.png)
+
+<img src="img/G-ScalingBlock.png" width="300" />
+<img src="img/D-ScalingBlock.png" width="300" />
 
 ### Performance overview
 
