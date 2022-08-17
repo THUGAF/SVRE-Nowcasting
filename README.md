@@ -8,22 +8,22 @@ This repo contains a PyTorch implementation of the **Generative Adversarial Spat
 
 ### Model architecture
 
-* Generator
+Generator
 ![Generator](img/Generator.png)
 
-* Discriminator
+Discriminator
 ![Discriminator](img/Discriminator.png)
 
-* Scaling blocks
+Scaling blocks
 
 <img src="img/G-ScalingBlock.png" width="400" /> <img src="img/D-ScalingBlock.png" width="400" />
 
 ### Performance overview
 
-* Ablation study
+Ablation study
 ![Ablation](img/ablation_vis.jpg)
 
-* Comparison study
+Comparison study
 ![Comparsion](img/comparison_vis.jpg)  
 
 ## Dependencies
@@ -43,7 +43,7 @@ pyproj=2.4.2.post1
 
 Run the bash scripts to train the model with the radar dataset.
 
-* Ablation study
+Ablation study
 
 ```cd scripts
 sh AttnUNet.sh
@@ -52,7 +52,7 @@ sh AttnUNet_GA.sh
 sh AttnUNet_GASVRE.sh
 ```
 
-* Comparison study
+Comparison study
 
 ```cd scripts
 sh PySTEPS.sh
