@@ -1,10 +1,10 @@
-# A Generative Adversarial Spatial Variability Representation Enhancement (GASVRE) Method for Radar Nowcasting
+# Enhancing Spatial Variability Representation of Radar Nowcasting
 
-Official implementation for the paper ["A Generative Adversarial Spatial Variability Representation Enhancement Method for Radar Nowcasting"](https://www.overleaf.com/project/619b412332c8a949224fefaa).
+Official implementation for the paper ["Enhancing Spatial Variability Representation of Radar Nowcasting"](https://www.overleaf.com/project/619b412332c8a949224fefaa).
 
 ## Description
 
-This repo contains a PyTorch implementation of the **Generative Adversarial Spatial Variability Representation Enhancement (GASVRE)** method for improving radar nowcasting.
+This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
 ### Model architecture
 
