@@ -1,12 +1,12 @@
 # Enhancing Spatial Variability Representation of Radar Nowcasting
 
-<!-- Official implementation for the paper ["Enhancing Spatial Variability Representation of Radar Nowcasting"](https://www.overleaf.com/project/619b412332c8a949224fefaa). -->
-
-<!-- ## Description -->
-
 This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
-## Model architecture
+## SVRE method
+
+![SVRE](img/SVRE.png)
+
+## Architecture of AGAN
 
 Generator
 ![Generator](img/Generator.png)
@@ -16,7 +16,8 @@ Discriminator
 
 Scaling blocks
 
-<img src="img/G-ScalingBlock.png" width="400" /> <img src="img/D-ScalingBlock.png" width="400" />
+![D-ScalingBlock](img/D-ScalingBlock.png)
+![G-ScalingBlock](img/G-ScalingBlock.png)
 
 ## Performance overview
 
