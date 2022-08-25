@@ -6,7 +6,7 @@
 
 This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
-### Model architecture
+## Model architecture
 
 Generator
 ![Generator](img/Generator.png)
@@ -18,7 +18,7 @@ Scaling blocks
 
 <img src="img/G-ScalingBlock.png" width="400" /> <img src="img/D-ScalingBlock.png" width="400" />
 
-### Performance overview
+## Performance overview
 
 Ablation study
 ![Ablation](img/ablation_vis.jpg)
