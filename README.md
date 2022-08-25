@@ -1,8 +1,8 @@
 # Enhancing Spatial Variability Representation of Radar Nowcasting
 
-Official implementation for the paper ["Enhancing Spatial Variability Representation of Radar Nowcasting"](https://www.overleaf.com/project/619b412332c8a949224fefaa).
+<!-- Official implementation for the paper ["Enhancing Spatial Variability Representation of Radar Nowcasting"](https://www.overleaf.com/project/619b412332c8a949224fefaa). -->
 
-## Description
+<!-- ## Description -->
 
 This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
@@ -61,8 +61,9 @@ sh SmaAt_UNet.sh
 sh AttnUNet_GASVRE.sh
 ```
 
-The radar data and pretrained models in this study are availble upon request.
+The intermediate products, such as the feature maps and the
+pretrained models are available upon request.
 
-## Citation
+<!-- ## Citation -->
 
-If you find this repo helpful, please cite the following article.
+<!-- If you find this repo helpful, please cite the following article. -->
