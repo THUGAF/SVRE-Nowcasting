@@ -34,10 +34,11 @@ Since the codes are based on Python, you need to install Python 3.8 first. The f
 ```pytorch=1.11.0
 numpy=1.20.3
 netcdf4=1.5.7
-pandas=1.2.3
+pandas=1.4.3
 matplotlib=3.5.1
-cartopy=0.18.0
-pyproj=2.4.2.post1
+cartopy=0.20.3
+pyproj=3.3.1
+pysteps=1.4.1
 ```
 
 ## Usage
