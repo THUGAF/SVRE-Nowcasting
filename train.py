@@ -25,7 +25,6 @@ parser.add_argument('--sample-index', type=int, default=0)
 # model settings
 parser.add_argument('--model', type=str, default='AttnUNet')
 parser.add_argument('--add-gan', action='store_true')
-parser.add_argument('--rolling', action='store_true')
 
 # training settings
 parser.add_argument('--pretrain', action='store_true')
