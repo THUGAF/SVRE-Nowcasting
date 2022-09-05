@@ -110,6 +110,7 @@ class Trainer:
 
             # Train
             self.model.train()
+
             for i, (tensor, timestamp) in enumerate(self.train_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).to(self.args.device)
@@ -145,6 +146,7 @@ class Trainer:
             # Validate
             print('\n[Val]')
             self.model.eval()
+
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
                     tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -206,9 +208,10 @@ class Trainer:
         metrics['SSDR'] = []
         test_loss = []
         
+        print('\n[Test]')
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        print('\n[Test]')
+        
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(self.test_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -267,11 +270,13 @@ class Trainer:
     def predict(self, model, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
+        
+        print('\n[Predict]')
         self.model = model
         self.model.to(self.args.device)
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        print('\n[Predict]')
+        
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(sample_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -306,22 +311,6 @@ class Trainer:
         df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample')
         print('Predict done.')
-
-        return pred_rev
-    
-    def nowcast(self, model, input_loader):
-        self.model = model
-        self.model.to(self.args.device)
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.args.device)['model'])
-        self.model.eval()
-        with torch.no_grad():
-            for tensor, _ in input_loader:
-                input_ = tensor.transpose(1, 0).to(self.args.device)
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred = self.model(input_)
-                pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-        
-        return pred
 
     def save_checkpoint(self, filename='checkpoint.pt'):
         states = {
@@ -401,6 +390,7 @@ class GANTrainer:
 
             # Train
             self.model.train()
+
             for i, (tensor, timestamp) in enumerate(self.train_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).to(self.args.device)
@@ -454,6 +444,7 @@ class GANTrainer:
             # Validate
             print('\n[Val]')
             self.model.eval()
+
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
                     tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -529,9 +520,10 @@ class GANTrainer:
         test_loss_g = []
         test_loss_d = []
         
+        print('\n[Test]')
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        print('\n[Test]')
+        
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(self.test_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -600,11 +592,13 @@ class GANTrainer:
     def predict(self, model, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
+        
+        print('\n[Predict]')
         self.model = model
         self.model.generator.to(self.args.device)
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        print('\n[Predict]')
+        
         with torch.no_grad():
             for i, (tensor, timestamp) in enumerate(sample_loader):
                 tensor = tensor.transpose(1, 0).to(self.args.device)
@@ -640,23 +634,6 @@ class GANTrainer:
         df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample')
         print('Predict done.')
-
-        return pred_rev
-    
-    def nowcast(self, model, input_loader):
-        self.model = model
-        self.model.to(self.args.device)
-        self.model.load_state_dict(torch.load(self.args.model_path, map_location=self.args.device)['model'])
-        self.model.eval()
-        with torch.no_grad():
-            for tensor, _ in input_loader:
-                input_ = tensor.transpose(1, 0).to(self.args.device)
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-                pred = torch.mean(torch.stack(preds), dim=0)
-                pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-        
-        return pred
 
     def save_checkpoint(self, filename='checkpoint.pt'):
         states = {

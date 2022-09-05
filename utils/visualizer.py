@@ -34,11 +34,6 @@ REF_CMAP = pcolors.ListedColormap([[255 / 255, 255 / 255, 255 / 255], [41 / 255,
                                    [189 / 255, 8 / 255, 19 / 255], [219 / 255, 102 / 255, 252 / 255], [186 / 255, 36 / 255, 235 / 255]])
 REF_NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), REF_CMAP.N)
 
-PRCP_CMAP = pcolors.ListedColormap([[255 / 255, 255 / 255, 255 / 255], [204 / 255, 243 / 255, 203 / 255], [173 / 255, 234 / 255, 169 / 255], 
-                                    [93 / 255, 190 / 255, 107 / 255], [120 / 255, 190 / 255, 252 / 255], [44 / 255, 56 / 255, 227 / 255], 
-                                    [235 / 255, 61 / 255, 248 / 255], [215 / 255, 106 / 255, 62 / 255], [140 / 255, 48 / 255, 104 / 255]])
-PRCP_NORM = pcolors.BoundaryNorm([0, 0.1, 1, 2, 5, 10, 20, 30, 50, 100], PRCP_CMAP.N)
-
 
 def plot_loss(train_loss, val_loss, output_path, filename='loss.png'):
     fig = plt.figure(figsize=(6, 4), dpi=300)
@@ -68,7 +63,6 @@ def _plot_map_figs(tensor, root, timestamp, stage, type, cmap, norm):
     if not os.path.exists(path):
         os.mkdir(path)
 
-    # inverse scaling
     tensor = tensor.detach().cpu()
 
     image_list = []
