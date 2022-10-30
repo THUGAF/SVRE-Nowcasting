@@ -122,7 +122,8 @@ class Trainer:
                 pred = self.model(input_)
 
                 # Backward propagation
-                loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
+                loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                    + self.args.var_reg * losses.cv_loss(pred, truth)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -157,8 +158,8 @@ class Trainer:
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
                     pred = self.model(input_)
-                    loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
-
+                    loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                        + self.args.var_reg * losses.cv_loss(pred, truth)
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                     truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -189,7 +190,8 @@ class Trainer:
             if self.current_iterations == self.args.max_iterations:
                 print('Max interations %d reached.' % self.args.max_iterations)
                 break
-
+    
+    @torch.no_grad()
     def test(self):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
@@ -212,40 +214,40 @@ class Trainer:
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         
-        with torch.no_grad():
-            for i, (tensor, timestamp) in enumerate(self.test_loader):
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+        for i, (tensor, timestamp) in enumerate(self.test_loader):
+            tensor = tensor.transpose(1, 0).to(self.args.device)
+            timestamp = timestamp.transpose(1, 0).to(self.args.device)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                pred = self.model(input_)
-                loss = losses.biased_mae_loss(pred, truth, self.args.vmax) + self.args.var_reg * losses.cv_loss(pred, truth)
+            pred = self.model(input_)
+            loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                + self.args.var_reg * losses.cv_loss(pred, truth)
 
-                input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                test_loss.append(loss.item())
-                if (i + 1) % self.args.display_interval == 0:
-                    print('Batch: [{}][{}] Loss: {:.4f}'.format(i + 1, len(self.test_loader), loss.item()))
+            test_loss.append(loss.item())
+            if (i + 1) % self.args.display_interval == 0:
+                print('Batch: [{}][{}] Loss: {:.4f}'.format(i + 1, len(self.test_loader), loss.item()))
 
-                for threshold in self.args.thresholds:
-                    pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
-                    metrics['POD-%ddBZ' % threshold].append(pod)
-                    metrics['FAR-%ddBZ' % threshold].append(far)
-                    metrics['CSI-%ddBZ' % threshold].append(csi)
-                    metrics['HSS-%ddBZ' % threshold].append(hss)
-                metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
-                metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
-                metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-                metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
-                metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-                metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
-                metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
-                metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
+            for threshold in self.args.thresholds:
+                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                metrics['POD-%ddBZ' % threshold].append(pod)
+                metrics['FAR-%ddBZ' % threshold].append(far)
+                metrics['CSI-%ddBZ' % threshold].append(csi)
+                metrics['HSS-%ddBZ' % threshold].append(hss)
+            metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
+            metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
+            metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
+            metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
+            metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
+            metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
+            metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
+            metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
                     
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
         for threshold in self.args.thresholds:
@@ -267,6 +269,7 @@ class Trainer:
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
         print('Test done.')
 
+    @torch.no_grad()
     def predict(self, model, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
@@ -277,35 +280,34 @@ class Trainer:
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         
-        with torch.no_grad():
-            for i, (tensor, timestamp) in enumerate(sample_loader):
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                
-                pred = self.model(input_)
-                input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0).to(self.args.device)
+            timestamp = timestamp.transpose(1, 0).to(self.args.device)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            
+            pred = self.model(input_)
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                for threshold in self.args.thresholds:
-                    pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
-                    metrics['POD-%ddBZ' % threshold] = pod
-                    metrics['FAR-%ddBZ' % threshold] = far
-                    metrics['CSI-%ddBZ' % threshold] = csi
-                    metrics['HSS-%ddBZ' % threshold] = hss
+            for threshold in self.args.thresholds:
+                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                metrics['POD-%ddBZ' % threshold] = pod
+                metrics['FAR-%ddBZ' % threshold] = far
+                metrics['CSI-%ddBZ' % threshold] = csi
+                metrics['HSS-%ddBZ' % threshold] = hss
 
-                metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
-                metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
-                metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-                metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
-                metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-                metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
-                metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
-                metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
+            metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
+            metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
+            metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
+            metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
+            metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
+            metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+            metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
+            metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
                     
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
@@ -501,6 +503,7 @@ class GANTrainer:
                 print('Max interations %d reached.' % self.args.max_iterations)
                 break
 
+    @torch.no_grad()
     def test(self):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
@@ -524,50 +527,49 @@ class GANTrainer:
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         
-        with torch.no_grad():
-            for i, (tensor, timestamp) in enumerate(self.test_loader):
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+        for i, (tensor, timestamp) in enumerate(self.test_loader):
+            tensor = tensor.transpose(1, 0).to(self.args.device)
+            timestamp = timestamp.transpose(1, 0).to(self.args.device)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-                real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
-                fake_score = torch.mean(torch.stack(fake_scores), dim=0)
-                loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
-                
-                pred = torch.mean(torch.stack(preds), dim=0)
-                loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
-                    losses.cv_loss(pred, truth) * self.args.var_reg + \
-                    losses.cal_g_loss(fake_score) * self.args.gan_reg
+            preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+            real_score = self.model.discriminator(torch.cat([input_, truth]))
+            fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+            fake_score = torch.mean(torch.stack(fake_scores), dim=0)
+            loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+            
+            pred = torch.mean(torch.stack(preds), dim=0)
+            loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
+                losses.cv_loss(pred, truth) * self.args.var_reg + \
+                losses.cal_g_loss(fake_score) * self.args.gan_reg
 
-                input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                test_loss_g.append(loss_g.item())
-                test_loss_d.append(loss_d.item())
-                if (i + 1) % self.args.display_interval == 0:
-                    print('Batch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
-                        i + 1, len(self.test_loader), loss_g.item(), loss_d.item()))
+            test_loss_g.append(loss_g.item())
+            test_loss_d.append(loss_d.item())
+            if (i + 1) % self.args.display_interval == 0:
+                print('Batch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
+                    i + 1, len(self.test_loader), loss_g.item(), loss_d.item()))
 
-                for threshold in self.args.thresholds:
-                    pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
-                    metrics['POD-%ddBZ' % threshold].append(pod)
-                    metrics['FAR-%ddBZ' % threshold].append(far)
-                    metrics['CSI-%ddBZ' % threshold].append(csi)
-                    metrics['HSS-%ddBZ' % threshold].append(hss)
-                metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
-                metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
-                metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-                metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
-                metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-                metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
-                metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
-                metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
+            for threshold in self.args.thresholds:
+                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                metrics['POD-%ddBZ' % threshold].append(pod)
+                metrics['FAR-%ddBZ' % threshold].append(far)
+                metrics['CSI-%ddBZ' % threshold].append(csi)
+                metrics['HSS-%ddBZ' % threshold].append(hss)
+            metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
+            metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
+            metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
+            metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
+            metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
+            metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
+            metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
+            metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
                     
         print('Loss G: {:.4f} Loss D: {:.4f}'.format(np.mean(test_loss_g), np.mean(test_loss_d)))
         for threshold in self.args.thresholds:
@@ -589,6 +591,7 @@ class GANTrainer:
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
         print('Test done.')
 
+    @torch.no_grad()
     def predict(self, model, sample_loader):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
@@ -599,36 +602,35 @@ class GANTrainer:
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         
-        with torch.no_grad():
-            for i, (tensor, timestamp) in enumerate(sample_loader):
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                
-                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-                pred = torch.mean(torch.stack(preds), dim=0)
-                input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+        for tensor, timestamp in sample_loader:
+            tensor = tensor.transpose(1, 0).to(self.args.device)
+            timestamp = timestamp.transpose(1, 0).to(self.args.device)
+            input_ = tensor[:self.args.input_steps]
+            truth = tensor[self.args.input_steps:]
+            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            
+            preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+            pred = torch.mean(torch.stack(preds), dim=0)
+            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
+            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
+            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-                for threshold in self.args.thresholds:
-                    pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
-                    metrics['POD-%ddBZ' % threshold] = pod
-                    metrics['FAR-%ddBZ' % threshold] = far
-                    metrics['CSI-%ddBZ' % threshold] = csi
-                    metrics['HSS-%ddBZ' % threshold] = hss
+            for threshold in self.args.thresholds:
+                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                metrics['POD-%ddBZ' % threshold] = pod
+                metrics['FAR-%ddBZ' % threshold] = far
+                metrics['CSI-%ddBZ' % threshold] = csi
+                metrics['HSS-%ddBZ' % threshold] = hss
 
-                metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
-                metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
-                metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-                metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
-                metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-                metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
-                metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
-                metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
+            metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
+            metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
+            metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
+            metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
+            metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
+            metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+            metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
+            metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
                     
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
