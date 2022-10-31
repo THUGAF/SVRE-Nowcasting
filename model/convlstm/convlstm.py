@@ -1,3 +1,4 @@
+from typing import Tuple
 import torch
 import torch.nn as nn
 from .layers import ConvLSTMCell, Down, Up
@@ -23,7 +24,7 @@ class Encoder(nn.Module):
             setattr(self, 'down' + str(i), Down(hidden_channels[i - 1], hidden_channels[i]))
             setattr(self, 'rnn' + str(i), ConvLSTMCell(hidden_channels[i], hidden_channels[i]))
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> Tuple[list, list]:
         # x: 5D tensor (S, B, C, H, W)
         h_list = [None] * self.num_layers
         c_list = [None] * self.num_layers
@@ -60,7 +61,7 @@ class Forecaster(nn.Module):
         self.rnn0 = ConvLSTMCell(hidden_channels[0], hidden_channels[0])
         self.up0 = Up(hidden_channels[0], out_channels)
     
-    def forward(self, h_list, c_list):
+    def forward(self, h_list: list, c_list: list) -> torch.Tensor:
         output = []
         
         x = torch.zeros_like(h_list[-1], device=h_list[-1].device)
@@ -84,12 +85,12 @@ class EncoderForecaster(nn.Module):
     See :class: `models.convrnn.Encoder` and :class:`models.convrnn.forecaster` for details.
     """
 
-    def __init__(self, forecast_steps, in_channels, out_channels, hidden_channels):
+    def __init__(self, forecast_steps: int, in_channels: int, out_channels: int, hidden_channels: int):
         super(EncoderForecaster, self).__init__()
         self.encoder = Encoder(in_channels, hidden_channels)
         self.forecaster = Forecaster(forecast_steps, out_channels, hidden_channels)
     
-    def forward(self, input_):
+    def forward(self, input_: torch.Tensor) -> torch.Tensor:
         states, cells = self.encoder(input_)
         output = self.forecaster(states, cells)
         return output

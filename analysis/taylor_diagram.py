@@ -6,7 +6,8 @@ import mpl_toolkits.axisartist.floating_axes as mFA
 import mpl_toolkits.axisartist.grid_finder as mGF
 
 
-# ref to: https://gist.github.com/ycopin/3342888
+# refers to: https://gist.github.com/ycopin/3342888
+
 class TaylorDiagram(object):
     '''
     Taylor diagram.

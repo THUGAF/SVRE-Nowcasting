@@ -39,7 +39,7 @@ class Up(nn.Module):
         self.upscaler = nn.Upsample(scale_factor=2, mode='bilinear')
         self.conv = DoubleConv2d(in_channels, out_channels, kernel_size, padding)
     
-    def forward(self, x, h) -> torch.Tensor:
+    def forward(self, x: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
         x = self.upscaler(x)
         out = torch.cat([x, h], dim=1)
         out = self.conv(out)
@@ -78,12 +78,12 @@ class SpatialAttention(nn.Module):
 
 
 class CBAM(nn.Module):
-    def __init__(self, in_channels, reduction_ratio=16, kernel_size=7):
+    def __init__(self, in_channels: int, reduction_ratio: int = 16, kernel_size: int = 7):
         super(CBAM, self).__init__()
         self.channel_att = ChannelAttention(in_channels, ratio=reduction_ratio)
         self.spatial_att = SpatialAttention(kernel_size=kernel_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.channel_att(x) * x
         out = self.spatial_att(out) * out
         return out

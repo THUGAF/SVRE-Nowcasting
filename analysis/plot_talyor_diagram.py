@@ -3,12 +3,11 @@ import torch
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from taylor_diagram import TaylorDiagram
-from typing import List
 
 
 plt.rcParams['font.sans-serif'] = 'Arial'
 
-def plot_taylor_diagram(root: str, paths: List, models: List, target_path: str, std_range: List, std_num: int, colors: List):
+def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, std_range: list, std_num: int, colors: list):
     fig = plt.figure(figsize=(10, 4), dpi=600)
 
     truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))

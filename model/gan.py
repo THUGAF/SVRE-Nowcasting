@@ -1,6 +1,6 @@
+from typing import Any
 import torch
 import torch.nn as nn
-
 from model import *
 
 
@@ -11,7 +11,7 @@ class GAN(nn.Module):
         args (args): Necessary arguments.
     """
 
-    def __init__(self, generator, args):
+    def __init__(self, generator: nn.Module, args: Any):
         super(GAN, self).__init__()
         self.generator = generator
         self.discriminator = Discriminator(
@@ -20,7 +20,7 @@ class GAN(nn.Module):
         
         self.args = args
     
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.generator(x)
 
 
@@ -32,7 +32,7 @@ class Discriminator(nn.Module):
         num_picks (int): Number of images for random selection.
     """
 
-    def __init__(self, total_steps):
+    def __init__(self, total_steps: int):
         super(Discriminator, self).__init__()
         self.d1 = Down(total_steps, 32)         # (128, 128)
         self.d2 = Down(32, 32)                  # (64, 64)
@@ -42,7 +42,7 @@ class Discriminator(nn.Module):
         self.d6 = Down(256, 256)                # (4, 4)
         self.last = nn.Conv2d(256, 1, kernel_size=4)
 
-    def forward(self, x) -> torch.Tensor:
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Embed L into channel dimension
         length, batch_size, channels, height, width = x.size()
         h = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)    # (L, B, C, H, W) -> (B, C*L, H, W)
@@ -120,12 +120,12 @@ class SpatialAttention(nn.Module):
 
 
 class CBAM(nn.Module):
-    def __init__(self, in_channels, reduction_ratio=16, kernel_size=7):
+    def __init__(self, in_channels: int, reduction_ratio: int = 16, kernel_size: int = 7):
         super(CBAM, self).__init__()
         self.channel_att = ChannelAttention(in_channels, ratio=reduction_ratio)
         self.spatial_att = SpatialAttention(kernel_size=kernel_size)
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.channel_att(x) * x
         out = self.spatial_att(out) * out
         return out

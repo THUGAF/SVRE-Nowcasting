@@ -29,7 +29,7 @@ class AttnUNet(nn.Module):
         self.out_conv = nn.Conv2d(32, forecast_steps, kernel_size=1)
         self.relu = nn.ReLU()
 
-    def forward(self, x):
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         length, batch_size, channels, height, width = x.size()
         h = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)
 

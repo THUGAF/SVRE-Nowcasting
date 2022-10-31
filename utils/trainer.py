@@ -16,6 +16,8 @@ import utils.scaler as scaler
 import model.losses as losses
 
 
+# refers to https://github.com/Bjarten/early-stopping-pytorch/blob/master/pytorchtools.py
+
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(self, patience=10, verbose=False, delta=0, path='checkpoint.pt'):

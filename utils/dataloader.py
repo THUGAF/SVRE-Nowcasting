@@ -1,9 +1,7 @@
+from typing import List, Tuple
 import os
-from typing import List
-
 import torch
 from torch.utils.data import DataLoader, Dataset, Subset
-
 import numpy as np
 import netCDF4 as nc
 
@@ -41,15 +39,15 @@ class TrainingDataset(Dataset):
         self.sample_num = np.array(self.sample_num)
         self.sample_cumsum = np.cumsum(self.sample_num)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         files = self.locate_files(index)
         tensor, timestamp = self.load_nc(files)
         return tensor, timestamp
     
-    def __len__(self,):
+    def __len__(self) -> int:
         return sum(self.sample_num)
         
-    def locate_files(self, index):
+    def locate_files(self, index: int) -> list:
         date_order = np.where(index - self.sample_cumsum < 0)[0][0]
         if date_order == 0:
             file_anchor = index
@@ -58,7 +56,7 @@ class TrainingDataset(Dataset):
         files = self.files[file_anchor: file_anchor + self.total_steps]
         return files
     
-    def load_nc(self, files):
+    def load_nc(self, files: list) -> Tuple[torch.Tensor, torch.Tensor]:
         tensor = []
         timestamp = []
         for file_ in files:
@@ -90,17 +88,18 @@ class SampleDataset(TrainingDataset):
         super().__init__(root, input_steps, forecast_steps, lon_range, lat_range)
         self.sample_index = sample_index
 
-    def __getitem__(self, index: int):
+    def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         files = self.locate_files(self.sample_index)
         tensor, timestamp = self.load_nc(files)
         return tensor, timestamp
 
-    def __len__(self):
+    def __len__(self) -> int:
         return 1
 
 
 def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int, num_workers: int, 
-              train_ratio: float, valid_ratio: float, lon_range: List[int], lat_range: List[int]):
+              train_ratio: float, valid_ratio: float, lon_range: List[int], lat_range: List[int]) \
+              -> Tuple[DataLoader, DataLoader, DataLoader]:
     r"""Load training and test data.
 
     Args:
@@ -151,7 +150,7 @@ def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int,
 
 
 def load_sample(root: str, sample_index: int, input_steps: int, forecast_steps: int, 
-                lon_range: List[int], lat_range: List[int]):
+                lon_range: List[int], lat_range: List[int]) -> DataLoader:
     r"""Load sample data.
 
     Args:

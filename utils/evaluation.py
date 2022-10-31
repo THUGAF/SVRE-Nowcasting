@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -5,7 +6,8 @@ import utils.ssim as ssim
 import utils.scaler as scaler
 
 
-def _count(pred, truth, threshold):
+def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
+    -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)
@@ -29,7 +31,8 @@ def _count(pred, truth, threshold):
     return np.array(hits), np.array(misses), np.array(false_alarms), np.array(correct_rejections)
 
 
-def evaluate_forecast(pred, truth, threshold, eps=1e-4):
+def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, eps: float = 1e-4) \
+    -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     r"""To calculate POD, FAR, CSI and HSS for the prediction at each time step.
     
     Args:
@@ -53,7 +56,7 @@ def evaluate_forecast(pred, truth, threshold, eps=1e-4):
     return pod, far, csi, hss
 
 
-def evaluate_ssd(tensor):
+def evaluate_ssd(tensor: torch.Tensor) -> np.ndarray:
     r"""To calculate SSD for the prediction at each time step.
 
     Args:
@@ -83,13 +86,13 @@ def evaluate_ssd(tensor):
     return np.array(ssd_list)
 
 
-def evaluate_ssdr(pred, truth):
+def evaluate_ssdr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     ssd_pred, ssd_truth = evaluate_ssd(pred), evaluate_ssd(truth)
     ssdr = ssd_pred / ssd_truth
     return ssdr
 
 
-def evaluate_cc(pred, truth):
+def evaluate_cc(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)
@@ -102,7 +105,7 @@ def evaluate_cc(pred, truth):
     return np.array(cc_list)
     
 
-def evaluate_me(pred, truth):
+def evaluate_me(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)
@@ -115,7 +118,7 @@ def evaluate_me(pred, truth):
     return np.array(me_list)
 
 
-def evaluate_mae(pred, truth):
+def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)
@@ -128,7 +131,7 @@ def evaluate_mae(pred, truth):
     return np.array(mae_list)
 
 
-def evaluate_rmse(pred, truth): 
+def evaluate_rmse(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)
@@ -141,7 +144,7 @@ def evaluate_rmse(pred, truth):
     return np.array(rmse_list)
 
 
-def evaluate_ssim(pred, truth):
+def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
@@ -156,7 +159,7 @@ def evaluate_ssim(pred, truth):
     return np.array(ssim_list)
 
 
-def evaluate_psnr(pred, truth):
+def evaluate_psnr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
@@ -172,7 +175,7 @@ def evaluate_psnr(pred, truth):
     return np.array(psnr_list)
 
 
-def evaluate_cvr(pred, truth):
+def evaluate_cvr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(0)

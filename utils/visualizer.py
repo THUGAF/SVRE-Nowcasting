@@ -35,7 +35,7 @@ REF_CMAP = pcolors.ListedColormap([[255 / 255, 255 / 255, 255 / 255], [41 / 255,
 REF_NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), REF_CMAP.N)
 
 
-def plot_loss(train_loss, val_loss, output_path, filename='loss.png'):
+def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str = 'loss.png') -> None:
     fig = plt.figure(figsize=(6, 4), dpi=300)
     ax = plt.subplot(111)
     ax.plot(range(1, len(train_loss) + 1), train_loss, 'b')
@@ -46,7 +46,8 @@ def plot_loss(train_loss, val_loss, output_path, filename='loss.png'):
     plt.close(fig)
 
 
-def plot_map(input_, pred, truth, timestamp, root, stage):
+def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, timestamp: torch.Tensor, 
+             root: str, stage: str) -> None:
     print('Plotting maps...')
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
@@ -58,12 +59,15 @@ def plot_map(input_, pred, truth, timestamp, root, stage):
                    stage, type='truth', cmap=REF_CMAP, norm=REF_NORM)
 
 
-def _plot_map_figs(tensor, root, timestamp, stage, type, cmap, norm):
+def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type: str, 
+                   cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
     path = os.path.join(root, stage, type)
     if not os.path.exists(path):
         os.mkdir(path)
 
+    # save tensor
     tensor = tensor.detach().cpu()
+    torch.save(tensor, '{}/{}.pt'.format(path, type))
 
     image_list = []
     for i in range(tensor.size(0)):
@@ -93,11 +97,9 @@ def _plot_map_figs(tensor, root, timestamp, stage, type, cmap, norm):
     # make gif
     imageio.mimsave('{}/{}.gif'.format(path, type), image_list, 'GIF', duration=0.2)
 
-    # save tensor
-    torch.save(tensor, '{}/{}.pt'.format(path, type))
 
-
-def _plot_map_fig(tensor_slice, file_path, current_datetime, cmap, norm):
+def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: datetime.datetime, 
+                  cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
     fig = plt.figure(figsize=(8, 8), dpi=300)
     fig.suptitle('\n' + current_datetime.strftime('%Y-%m-%d %H:%M:%S'), fontsize=24)
     ax = plt.subplot(111, projection=ccrs.Mercator())
