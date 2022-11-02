@@ -97,14 +97,16 @@ class Trainer:
             self.current_iterations = states['iteration']
             self.train_loss = states['train_loss']
             self.val_loss = states['val_loss']
+            start_epoch = int(math.floor(self.current_iterations / len(self.train_loader)))
         else:
             self.current_iterations = 0
             self.train_loss = []
             self.val_loss = []
-
+            start_epoch = 0
+        
         early_stopping = EarlyStopping(verbose=True, path='bestmodel.pt')
 
-        for epoch in range(self.total_epochs):
+        for epoch in range(start_epoch, self.total_epochs):
             print('\n[Train]')
             print('Epoch: [{}][{}]'.format(epoch + 1, self.total_epochs))
             train_loss = []
@@ -114,6 +116,12 @@ class Trainer:
             self.model.train()
 
             for i, (tensor, timestamp) in enumerate(self.train_loader):
+                # Check max iterations
+                self.current_iterations += 1
+                if self.current_iterations > self.args.max_iterations:
+                    print('Max interations %d reached.' % self.args.max_iterations)
+                    break
+
                 tensor = tensor.transpose(1, 0).to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
@@ -184,13 +192,7 @@ class Trainer:
 
             if self.args.early_stopping:
                 early_stopping(self.val_loss[-1], self)
-            
             if early_stopping.early_stop:
-                break
-            
-            self.current_iterations += 1
-            if self.current_iterations == self.args.max_iterations:
-                print('Max interations %d reached.' % self.args.max_iterations)
                 break
     
     @torch.no_grad()
@@ -375,16 +377,18 @@ class GANTrainer:
             self.train_loss_d = states['train_loss_d']
             self.val_loss_g = states['val_loss_g']
             self.val_loss_d = states['val_loss_d']
+            start_epoch = int(math.floor(self.current_iterations / len(self.train_loader)))
         else:
             self.current_iterations = 0
             self.train_loss_g = []
             self.train_loss_d = []
             self.val_loss_g = []
             self.val_loss_d = []
-
+            start_epoch = 0
+        
         early_stopping = EarlyStopping(verbose=True, path='bestmodel.pt')
 
-        for epoch in range(self.total_epochs):
+        for epoch in range(start_epoch, self.total_epochs):
             print('\n[Train]')
             print('Epoch: [{}][{}]'.format(epoch + 1, self.total_epochs))
             train_loss_g = []
@@ -396,6 +400,12 @@ class GANTrainer:
             self.model.train()
 
             for i, (tensor, timestamp) in enumerate(self.train_loader):
+                # Check max iterations
+                self.current_iterations += 1
+                if self.current_iterations > self.args.max_iterations:
+                    print('Max interations %d reached.' % self.args.max_iterations)
+                    break
+
                 tensor = tensor.transpose(1, 0).to(self.args.device)
                 timestamp = timestamp.transpose(1, 0).to(self.args.device)
                 input_ = tensor[:self.args.input_steps]
@@ -496,13 +506,7 @@ class GANTrainer:
 
             if self.args.early_stopping:
                 early_stopping(self.val_loss_g[-1], self)
-            
             if early_stopping.early_stop:
-                break
-            
-            self.current_iterations += 1
-            if self.current_iterations == self.args.max_iterations:
-                print('Max interations %d reached.' % self.args.max_iterations)
                 break
 
     @torch.no_grad()
