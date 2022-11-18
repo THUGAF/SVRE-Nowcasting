@@ -60,7 +60,7 @@ parser.add_argument('--thresholds', type=int, nargs='+', default=[10, 15, 20, 25
 args = parser.parse_args()
 
 
-def main():
+def main(args):
     # Display global settings
     print('Temporal resolution: {} min'.format(args.resolution))
     print('Spatial resolution: 1.0 km')
@@ -73,7 +73,6 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
-    # torch.autograd.set_detect_anomaly(True)
 
     # Set device
     args.device = 'cuda:0' if torch.cuda.is_available() else 'cpu'
@@ -117,4 +116,4 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
+    main(args)

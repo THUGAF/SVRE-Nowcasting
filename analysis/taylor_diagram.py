@@ -7,7 +7,6 @@ import mpl_toolkits.axisartist.grid_finder as mGF
 
 
 # refers to: https://gist.github.com/ycopin/3342888
-
 class TaylorDiagram(object):
     '''
     Taylor diagram.
