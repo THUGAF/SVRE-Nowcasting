@@ -5,7 +5,7 @@ from .layers import ConvLSTMCell, Down, Up
 
 
 class Encoder(nn.Module):
-    r"""N-layer ConvLSTM Encoder for 5D (S, B, C, H, W) input. Each layer of the encoder includes a ConvLSTM layer 
+    r"""N-layer ConvLSTM Encoder for 5D (B, L, C, H, W) input. Each layer of the encoder includes a ConvLSTM layer 
         and a convolutional layer.
         
     Args:
@@ -25,12 +25,12 @@ class Encoder(nn.Module):
             setattr(self, 'rnn' + str(i), ConvLSTMCell(hidden_channels[i], hidden_channels[i]))
 
     def forward(self, x: torch.Tensor) -> Tuple[list, list]:
-        # x: 5D tensor (S, B, C, H, W)
+        # x: 5D tensor (B, L, C, H, W)
         h_list = [None] * self.num_layers
         c_list = [None] * self.num_layers
 
-        for i in range(x.size(0)):
-            y = self.down0(x[i])
+        for i in range(x.size(1)):
+            y = self.down0(x[:, i])
             h_list[0], c_list[0] = self.rnn0(y, h_list[0], c_list[0])
             for j in range(1, self.num_layers):
                 y = getattr(self, 'down' + str(j))(h_list[j - 1])
@@ -40,7 +40,7 @@ class Encoder(nn.Module):
 
 
 class Forecaster(nn.Module):
-    r"""N-layer ConvLSTM forecaster for 5D (S, B, C, H, W) input. Each layer of the forecaster includes a ConvLSTM layer 
+    r"""N-layer ConvLSTM forecaster for 5D (B, L, C, H, W) input. Each layer of the forecaster includes a ConvLSTM layer 
         and a bilinear-resize-convolutional layer.
 
     Args:
@@ -65,7 +65,7 @@ class Forecaster(nn.Module):
         output = []
         
         x = torch.zeros_like(h_list[-1], device=h_list[-1].device)
-        for i in range(self.forecast_steps):
+        for _ in range(self.forecast_steps):
             h_list[-1], c_list[-1] = getattr(self, 'rnn' + str(self.num_layers - 1))(x, h_list[-1], c_list[-1])
             y = getattr(self, 'up' + str(self.num_layers - 1))(h_list[-1])
             for j in range(1, self.num_layers):
@@ -73,9 +73,10 @@ class Forecaster(nn.Module):
                 y = getattr(self, 'up' + str(self.num_layers - j - 1))(h_list[-j-1])
             output.append(y)
     
-        # output: 5D tensor (S_out, B, C, H, W)
         output = torch.stack(output, dim=0)
         output = torch.relu(output)
+        # output: 5D tensor (B, L_out, C, H, W)
+        output = output.transpose(1, 0)
         return output
 
 

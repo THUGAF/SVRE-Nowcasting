@@ -121,13 +121,12 @@ class Trainer:
                     print('Max interations %d reached.' % self.args.max_iterations)
                     break
 
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
+                tensor = tensor.to(self.args.device)
+                timestamp = timestamp.to(self.args.device)
+                input_ = tensor[:, :self.args.input_steps]
+                truth = tensor[:, self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-
                 pred = self.model(input_)
 
                 # Backward propagation
@@ -159,16 +158,16 @@ class Trainer:
 
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
-                    tensor = tensor.transpose(1, 0).to(self.args.device)
-                    timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                    input_ = tensor[:self.args.input_steps]
-                    truth = tensor[self.args.input_steps:]
+                    tensor = tensor.to(self.args.device)
+                    timestamp = timestamp.to(self.args.device)
+                    input_ = tensor[:, :self.args.input_steps]
+                    truth = tensor[:, self.args.input_steps:]
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                    
                     pred = self.model(input_)
                     loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
                         + self.args.var_reg * losses.cv_loss(pred, truth)
+                    
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
                     truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
@@ -218,13 +217,12 @@ class Trainer:
         self.model.eval()
         
         for i, (tensor, timestamp) in enumerate(self.test_loader):
-            tensor = tensor.transpose(1, 0).to(self.args.device)
-            timestamp = timestamp.transpose(1, 0).to(self.args.device)
-            input_ = tensor[:self.args.input_steps]
-            truth = tensor[self.args.input_steps:]
+            tensor = tensor.to(self.args.device)
+            timestamp = timestamp.to(self.args.device)
+            input_ = tensor[:, :self.args.input_steps]
+            truth = tensor[:, self.args.input_steps:]
             input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-
             pred = self.model(input_)
             loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
                 + self.args.var_reg * losses.cv_loss(pred, truth)
@@ -284,13 +282,12 @@ class Trainer:
         self.model.eval()
         
         for tensor, timestamp in sample_loader:
-            tensor = tensor.transpose(1, 0).to(self.args.device)
-            timestamp = timestamp.transpose(1, 0).to(self.args.device)
-            input_ = tensor[:self.args.input_steps]
-            truth = tensor[self.args.input_steps:]
+            tensor = tensor.to(self.args.device)
+            timestamp = timestamp.to(self.args.device)
+            input_ = tensor[:, :self.args.input_steps]
+            truth = tensor[:, self.args.input_steps:]
             input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-            
             pred = self.model(input_)
             input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -405,16 +402,16 @@ class GANTrainer:
                     print('Max interations %d reached.' % self.args.max_iterations)
                     break
 
-                tensor = tensor.transpose(1, 0).to(self.args.device)
-                timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                input_ = tensor[:self.args.input_steps]
-                truth = tensor[self.args.input_steps:]
+                tensor = tensor.to(self.args.device)
+                timestamp = timestamp.to(self.args.device)
+                input_ = tensor[:, :self.args.input_steps]
+                truth = tensor[:, self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
                 preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-                real_score = self.model.discriminator(torch.cat([input_, truth]))
-                fake_scores = [self.model.discriminator(torch.cat([input_, pred.detach()])) for pred in preds]
+                real_score = self.model.discriminator(tensor)
+                fake_scores = [self.model.discriminator(torch.cat([input_, pred.detach()], dim=1)) for pred in preds]
                 
                 # Backward propagation
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
@@ -424,7 +421,7 @@ class GANTrainer:
                 self.optimizer_d.step()
                 self.scheduler_d.step()
 
-                fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+                fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                 pred = torch.mean(torch.stack(preds), dim=0)
                 loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
@@ -460,16 +457,16 @@ class GANTrainer:
 
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
-                    tensor = tensor.transpose(1, 0).to(self.args.device)
-                    timestamp = timestamp.transpose(1, 0).to(self.args.device)
-                    input_ = tensor[:self.args.input_steps]
-                    truth = tensor[self.args.input_steps:]
+                    tensor = tensor.to(self.args.device)
+                    timestamp = timestamp.to(self.args.device)
+                    input_ = tensor[:, :self.args.input_steps]
+                    truth = tensor[:, self.args.input_steps:]
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
                     preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-                    real_score = self.model.discriminator(torch.cat([input_, truth]))
-                    fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+                    real_score = self.model.discriminator(tensor)
+                    fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
                     fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                     loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
 
@@ -533,16 +530,16 @@ class GANTrainer:
         self.model.eval()
         
         for i, (tensor, timestamp) in enumerate(self.test_loader):
-            tensor = tensor.transpose(1, 0).to(self.args.device)
-            timestamp = timestamp.transpose(1, 0).to(self.args.device)
-            input_ = tensor[:self.args.input_steps]
-            truth = tensor[self.args.input_steps:]
+            tensor = tensor.to(self.args.device)
+            timestamp = timestamp.to(self.args.device)
+            input_ = tensor[:, :self.args.input_steps]
+            truth = tensor[:, self.args.input_steps:]
             input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
             preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-            real_score = self.model.discriminator(torch.cat([input_, truth]))
-            fake_scores = [self.model.discriminator(torch.cat([input_, pred])) for pred in preds]
+            real_score = self.model.discriminator(tensor)
+            fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
             fake_score = torch.mean(torch.stack(fake_scores), dim=0)
             loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
             
@@ -608,10 +605,10 @@ class GANTrainer:
         self.model.eval()
         
         for tensor, timestamp in sample_loader:
-            tensor = tensor.transpose(1, 0).to(self.args.device)
-            timestamp = timestamp.transpose(1, 0).to(self.args.device)
-            input_ = tensor[:self.args.input_steps]
-            truth = tensor[self.args.input_steps:]
+            tensor = tensor.to(self.args.device)
+            timestamp = timestamp.to(self.args.device)
+            input_ = tensor[:, :self.args.input_steps]
+            truth = tensor[:, self.args.input_steps:]
             input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             

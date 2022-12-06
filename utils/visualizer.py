@@ -1,13 +1,13 @@
 import os
 import datetime
-
 import torch
 import numpy as np
+import pandas as pd
 import imageio
 import matplotlib.pyplot as plt
 import matplotlib.colors as pcolors
 import matplotlib.cm as cm
-
+import scipy.signal
 import pyproj
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
@@ -51,11 +51,11 @@ def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, time
     print('Plotting maps...')
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
-    _plot_map_figs(input_, root, timestamp[:input_.size(0)], stage, type='input', 
+    _plot_map_figs(input_, root, timestamp[:, :input_.size(1)], stage, type='input', 
                    cmap=REF_CMAP, norm=REF_NORM)
-    _plot_map_figs(pred, root, timestamp[input_.size(0): input_.size(0) + pred.size(0)], 
+    _plot_map_figs(pred, root, timestamp[:, input_.size(1): input_.size(1) + pred.size(1)], 
                    stage, type='pred', cmap=REF_CMAP, norm=REF_NORM)
-    _plot_map_figs(truth, root, timestamp[input_.size(0): input_.size(0) + truth.size(0)], 
+    _plot_map_figs(truth, root, timestamp[:, input_.size(1): input_.size(1) + truth.size(1)], 
                    stage, type='truth', cmap=REF_CMAP, norm=REF_NORM)
 
 
@@ -69,25 +69,26 @@ def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, sta
     tensor = tensor.detach().cpu()
     torch.save(tensor, '{}/{}.pt'.format(path, type))
 
+    seq_len = tensor.size(1)
     image_list = []
-    for i in range(tensor.size(0)):
+    for i in range(seq_len):
         # minus represents the time before current moment
         if type == 'input':
-            str_min = str(6 * (i - tensor.size(0) + 1))
+            str_min = str(6 * (i - seq_len + 1))
         else:
             str_min = str(6 * (i + 1))
         file_path = '{}/{}.png'.format(path, str_min)
-        current_datetime = datetime.datetime.utcfromtimestamp(int(timestamp[i, 0]))
-        _plot_map_fig(tensor[i, 0, 0], file_path, current_datetime, cmap, norm)
+        current_datetime = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
+        _plot_map_fig(tensor[0, i, 0], file_path, current_datetime, cmap, norm)
         image_list.append(imageio.imread(file_path))
 
     # plot the long image
-    num_rows = 2 if tensor.size(0) > 10 else 1
-    num_cols = tensor.size(0) // num_rows
+    num_rows = 2 if seq_len > 10 else 1
+    num_cols = seq_len // num_rows
     fig = plt.figure(figsize=(num_cols, num_rows), dpi=300)
-    for i in range(tensor.size(0)):
+    for i in range(seq_len):
         ax = fig.add_subplot(num_rows, num_cols, i + 1)
-        ax.imshow(np.flip(tensor[i, 0, 0].numpy(), axis=0), cmap=cmap, norm=norm)
+        ax.imshow(np.flip(tensor[0, i, 0].numpy(), axis=0), cmap=cmap, norm=norm)
         ax.axis('off')
     
     plt.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
@@ -130,4 +131,58 @@ def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: 
 
     plt.subplots_adjust(left=0.1, right=1, bottom=0, top=1)
     fig.savefig(file_path)
+    plt.close(fig)
+
+
+def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
+    tensors = tensors.detach().cpu()
+    pred, truth = pred[0, 0, 0], truth[0, 0, 0]
+    len_y, len_x = pred.size(0), pred.size(1)
+    xx, yy = np.arange(len_x), np.arange(len_y)
+    xx, yy = np.meshgrid(xx, yy)
+    
+    freq_x, pred_psd_x = scipy.signal.welch(pred, nperseg=pred.shape[1], axis=1)
+    freq_y, pred_psd_y = scipy.signal.welch(pred, nperseg=pred.shape[0], axis=0)
+    _, truth_psd_x = scipy.signal.welch(truth, nperseg=truth.shape[1], axis=1)
+    _, truth_psd_y = scipy.signal.welch(truth, nperseg=truth.shape[0], axis=0)
+    wavelength_x = 1 / freq_x[1:]
+    wavelength_y = 1 / freq_y[1:]
+
+    psd_x_data = {
+        'wavelength_x': wavelength_x,
+        'pred_psd_x': pred_psd_x,
+        'truth_psd_x': truth_psd_x,
+    }
+    psd_y_data = {
+        'wavelength_y': wavelength_y,
+        'pred_psd_y': pred_psd_y,
+        'truth_psd_y': truth_psd_y
+    }
+    psd_x_df = pd.DataFrame(psd_x_data)
+    psd_y_df = pd.DataFrame(psd_y_data)
+    psd_x_df.to_csv('{}/{}_psd_x.csv'.format(root, stage), float_format='%.8f', index=False)
+    psd_y_df.to_csv('{}/{}_psd_y.csv'.format(root, stage), float_format='%.8f', index=False)
+
+    fig = plt.figure(figsize=(14, 6), dpi=600)
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax1.plot(wavelength_x, pred_psd_x, color='b')
+    ax1.plot(wavelength_x, truth_psd_x, color='r')
+    ax1.set_xscale('log', base=2)
+    ax1.set_yscale('log', base=10)
+    ax1.invert_xaxis()
+    ax1.set_xlabel('Wave length (km)', fontsize=12)
+    ax1.set_ylabel('Power Spectral Density of X axis', fontsize=12)
+    ax1.legend(['Prediction', 'Observation'])
+
+    ax2 = fig.add_subplot(1, 2, 2)
+    ax2.plot(wavelength_y, pred_psd_y, color='b')
+    ax2.plot(wavelength_y, truth_psd_y, color='r')
+    ax2.set_xscale('log', base=2)
+    ax2.set_yscale('log', base=10)
+    ax2.invert_xaxis()
+    ax2.set_xlabel('Wave length (deg)', fontsize=12)
+    ax2.set_ylabel('Power Spectral Density of Y axis', fontsize=12)
+    ax2.legend(['Prediction', 'Observation'])
+
+    fig.savefig('{}/{}_psd.png'.format(root, stage), bbox_inches='tight')
     plt.close(fig)

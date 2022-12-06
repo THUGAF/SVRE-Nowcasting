@@ -44,8 +44,9 @@ class Discriminator(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Embed L into channel dimension
-        length, batch_size, channels, height, width = x.size()
-        h = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)    # (L, B, C, H, W) -> (B, C*L, H, W)
+        batch_size, length, channels, height, width = x.size()
+        # (B, L, C, H, W) -> (B, C*L, H, W)
+        h = x.reshape(batch_size, length * channels, height, width)
         h = self.d1(h)
         h = self.d2(h)
         h = self.d3(h)
@@ -53,6 +54,7 @@ class Discriminator(nn.Module):
         h = self.d5(h)
         h = self.d6(h)
         out = self.last(h)
+        # out: (B, 1)
         out = out.reshape(batch_size, 1)
         return out
 

@@ -30,8 +30,9 @@ class AttnUNet(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        length, batch_size, channels, height, width = x.size()
-        h = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)
+        # (B, L, C, H, W)
+        batch_size, length, channels, height, width = x.size()
+        h = x.reshape(batch_size, length * channels, height, width)
 
         # Input step
         h1 = self.in_conv(h)
@@ -39,7 +40,7 @@ class AttnUNet(nn.Module):
         h3 = self.down2(h2)
         h4 = self.down3(h3)
         h_last = self.down4(h4)
-        
+
         # Forecast step
         if self.add_noise:
             z = Normal(0, 1).sample(h_last.size()).type_as(h_last)
@@ -50,7 +51,7 @@ class AttnUNet(nn.Module):
         h1p = self.up1(h2p, h1)
 
         out = self.out_conv(h1p)
-        out = out.reshape(batch_size, -1, channels, height, width).transpose(1, 0)
+        out = out.reshape(batch_size, -1, channels, height, width)
         out = self.relu(out)
         return out
         

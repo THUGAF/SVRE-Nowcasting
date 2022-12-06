@@ -45,13 +45,13 @@ def ssd(tensor: torch.Tensor) -> torch.Tensor:
 
 def ssd_loss(pred: torch.Tensor, truth: torch.Tensor) -> torch.Tensor:
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len, batch_size = pred.size(0), pred.size(1)
+    batch_size, seq_len = pred.size(0), pred.size(1)
     
     pred_ssd_list = []
     truth_ssd_list = []
     for s in range(seq_len):
-        pred_ssd = ssd(pred[s]) / batch_size
-        truth_ssd = ssd(truth[s]) / batch_size
+        pred_ssd = ssd(pred[:, s]) / batch_size
+        truth_ssd = ssd(truth[:, s]) / batch_size
         pred_ssd_list.append(pred_ssd)
         truth_ssd_list.append(truth_ssd)
     

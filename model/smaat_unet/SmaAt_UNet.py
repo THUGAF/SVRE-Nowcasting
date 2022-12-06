@@ -33,8 +33,8 @@ class SmaAt_UNet(nn.Module):
         self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
-        length, batch_size, channels, height, width = x.size()
-        x = x.transpose(1, 0).reshape(batch_size, length * channels, height, width)
+        batch_size, length, channels, height, width = x.size()
+        x = x.reshape(batch_size, length * channels, height, width)
         x1 = self.inc(x)
         x1Att = self.cbam1(x1)
         x2 = self.down1(x1)
@@ -50,6 +50,6 @@ class SmaAt_UNet(nn.Module):
         x = self.up3(x, x2Att)
         x = self.up4(x, x1Att)
         logits = self.outc(x)
-        logits = logits.transpose(1, 0).unsqueeze(2)
+        logits = logits.reshape(batch_size, -1, channels, height, width)
         logits = self.relu(logits)
         return logits

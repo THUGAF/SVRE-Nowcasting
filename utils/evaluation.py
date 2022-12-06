@@ -10,7 +10,7 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
     -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
     
     hits = []
     misses = []
@@ -18,7 +18,7 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
     correct_rejections = []
 
     for s in range(seq_len):
-        stat = 2 * (truth[s] > threshold).int() + (pred[s] > threshold).int()
+        stat = 2 * (truth[:, s] > threshold).int() + (pred[:, s] > threshold).int()
         hit = torch.sum(stat == 3).item()
         miss = torch.sum(stat == 2).item()
         false_alarm = torch.sum(stat == 1).item()
@@ -52,7 +52,6 @@ def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float,
     far = f / (h + f + eps)
     csi = h / (h + m + f + eps)
     hss = 2 * (h * c - m * f) / ((h + m) * (m + c) + (h + f) * (f + c) + eps)
-    
     return pod, far, csi, hss
 
 
@@ -67,14 +66,14 @@ def evaluate_ssd(tensor: torch.Tensor) -> np.ndarray:
 
     tensor = tensor.cpu()
     tensor = scaler.convert_to_gray(tensor)
-    seq_len, batch_size = tensor.size(0), tensor.size(1)
+    batch_size, seq_len = tensor.size(0), tensor.size(1)
     
     ssd_list = []
     for s in range(seq_len):
-        left_pad = F.pad(tensor[s], (1, 0, 0, 0))
-        right_pad = F.pad(tensor[s], (0, 1, 0, 0))
-        up_pad = F.pad(tensor[s], (0, 0, 1, 0))
-        bottom_pad = F.pad(tensor[s], (0, 0, 0, 1))
+        left_pad = F.pad(tensor[:, s], (1, 0, 0, 0))
+        right_pad = F.pad(tensor[:, s], (0, 1, 0, 0))
+        up_pad = F.pad(tensor[:, s], (0, 0, 1, 0))
+        bottom_pad = F.pad(tensor[:, s], (0, 0, 0, 1))
 
         diff_h = left_pad - right_pad
         diff_v = up_pad - bottom_pad
@@ -95,11 +94,11 @@ def evaluate_ssdr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_cc(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     cc_list = []
     for s in range(seq_len):
-        cc = torch.corrcoef(torch.stack([pred[s].flatten(), truth[s].flatten()]))[0, 1]
+        cc = torch.corrcoef(torch.stack([pred[:, s].flatten(), truth[:, s].flatten()]))[0, 1]
         cc_list.append(cc)
 
     return np.array(cc_list)
@@ -108,11 +107,11 @@ def evaluate_cc(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_me(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     me_list = []
     for s in range(seq_len):
-        me = torch.mean(pred[s] - truth[s])
+        me = torch.mean(pred[:, s] - truth[:, s])
         me_list.append(me)
 
     return np.array(me_list)
@@ -121,11 +120,11 @@ def evaluate_me(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     mae_list = []
     for s in range(seq_len):
-        mae = F.l1_loss(pred[s], truth[s])
+        mae = F.l1_loss(pred[:, s], truth[:, s])
         mae_list.append(mae)
 
     return np.array(mae_list)
@@ -134,11 +133,11 @@ def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_rmse(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     rmse_list = []
     for s in range(seq_len):
-        rmse = torch.sqrt(F.mse_loss(pred[s], truth[s]))
+        rmse = torch.sqrt(F.mse_loss(pred[:, s], truth[:, s]))
         rmse_list.append(rmse)
 
     return np.array(rmse_list)
@@ -149,11 +148,11 @@ def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.cpu(), truth.cpu()
     pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
     pred, truth = pred.float(), truth.float()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     ssim_list = []
     for s in range(seq_len):
-        ssim_ = ssim.ssim(pred[s], truth[s])
+        ssim_ = ssim.ssim(pred[:, s], truth[:, s])
         ssim_list.append(ssim_)
 
     return np.array(ssim_list)
@@ -164,11 +163,11 @@ def evaluate_psnr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.cpu(), truth.cpu()
     pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
     pred, truth = pred.float(), truth.float()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     psnr_list = []
     for s in range(seq_len):
-        mse = F.mse_loss(pred[s], truth[s])
+        mse = F.mse_loss(pred[:, s], truth[:, s])
         psnr = 10 * torch.log10(torch.max(pred) ** 2 / mse)
         psnr_list.append(psnr)
 
@@ -178,12 +177,12 @@ def evaluate_psnr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_cvr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(0)
+    seq_len = pred.size(1)
 
     cvr_list = []
     for s in range(seq_len):
-        pred_cv = torch.std(pred[s]) / torch.mean(pred[s])
-        truth_cv = torch.std(truth[s]) / torch.mean(truth[s])
+        pred_cv = torch.std(pred[:, s]) / torch.mean(pred[:, s])
+        truth_cv = torch.std(truth[:, s]) / torch.mean(truth[:, s])
         cvr_list.append(pred_cv / truth_cv)
 
     return np.array(cvr_list)
