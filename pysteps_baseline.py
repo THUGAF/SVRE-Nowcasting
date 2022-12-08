@@ -59,7 +59,8 @@ def predict(args):
         truth = tensor[:, args.input_steps:]
         input_pysteps = input_[0, :, 0].numpy()
         velocity = pysteps.motion.get_method('darts')(input_pysteps)
-        pred_pystpes = pysteps.nowcasts.get_method('sprog')(input_pysteps, velocity, args.forecast_steps, R_thr=0)
+        pred_pystpes = pysteps.nowcasts.get_method('sprog')(input_pysteps[-2:], velocity, args.forecast_steps, 
+                                                            R_thr=-10, ar_order=1)
         pred = torch.from_numpy(np.nan_to_num(pred_pystpes)).view_as(truth)
 
         # visualization
