@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, List
 import torch
 import torch.nn as nn
 from .layers import ConvLSTMCell, Down, Up
@@ -13,7 +13,7 @@ class Encoder(nn.Module):
         hidden_channels (list[int]): Channels of convolutional layers.
     """
 
-    def __init__(self, in_channels: int, hidden_channels: list):
+    def __init__(self, in_channels: int, hidden_channels: List[int]):
         super(Encoder, self).__init__()
         self.num_layers = len(hidden_channels)
 
@@ -49,7 +49,7 @@ class Forecaster(nn.Module):
         hidden_channels (list[int]): Channels of convolutional layers.
     """
 
-    def __init__(self, forecast_steps: int, out_channels: int, hidden_channels: list):
+    def __init__(self, forecast_steps: int, out_channels: int, hidden_channels: List[int]):
         super(Forecaster, self).__init__()
         self.num_layers = len(hidden_channels)
         self.forecast_steps = forecast_steps
@@ -86,7 +86,8 @@ class EncoderForecaster(nn.Module):
     See :class: `models.convrnn.Encoder` and :class:`models.convrnn.forecaster` for details.
     """
 
-    def __init__(self, forecast_steps: int, in_channels: int, out_channels: int, hidden_channels: int):
+    def __init__(self, forecast_steps: int, in_channels: int = 1, out_channels: int = 1, 
+                 hidden_channels: List[int] = [64, 64, 64, 64]):
         super(EncoderForecaster, self).__init__()
         self.encoder = Encoder(in_channels, hidden_channels)
         self.forecaster = Forecaster(forecast_steps, out_channels, hidden_channels)

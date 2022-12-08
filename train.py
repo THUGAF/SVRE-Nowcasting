@@ -20,7 +20,7 @@ parser.add_argument('--forecast-steps', type=int, default=10)
 # data loading settings
 parser.add_argument('--train-ratio', type=float, default=0.7)
 parser.add_argument('--valid-ratio', type=float, default=0.1)
-parser.add_argument('--sample-index', type=int, default=0)
+parser.add_argument('--sample-indices', type=int, nargs='+', default=[0])
 
 # model settings
 parser.add_argument('--model', type=str, default='AttnUNet')
@@ -45,17 +45,17 @@ parser.add_argument('--gan-reg', type=float, default=0.1)
 parser.add_argument('--num-threads', type=int, default=1)
 parser.add_argument('--num-workers', type=int, default=1)
 parser.add_argument('--display-interval', type=int, default=1)
-parser.add_argument('--seed', type=int, default=2022)
+parser.add_argument('--seed', type=int, default=2023)
 
 # nowcasting settings
 parser.add_argument('--resolution', type=float, default=6.0, help='Time resolution (min)')
 parser.add_argument('--lon-range', type=int, nargs='+', default=[271, 527])
 parser.add_argument('--lat-range', type=int, nargs='+', default=[335, 591])
 parser.add_argument('--vmax', type=float, default=70.0)
-parser.add_argument('--vmin', type=float, default=0.0)
+parser.add_argument('--vmin', type=float, default=-10.0)
 
 # evaluation settings
-parser.add_argument('--thresholds', type=int, nargs='+', default=[10, 15, 20, 25, 30, 35, 40])
+parser.add_argument('--thresholds', type=int, nargs='+', default=[10, 20, 30, 40])
 
 args = parser.parse_args()
 
@@ -70,6 +70,7 @@ def main(args):
     print('Forecast time range: {} min'.format(str(args.forecast_steps * args.resolution)))
 
     # fix the random seed
+    torch.backends.cudnn.enabled = False
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)
@@ -81,7 +82,7 @@ def main(args):
     if args.model == 'AttnUNet':
         model = AttnUNet(args.input_steps, args.forecast_steps)
     elif args.model == 'EncoderForecaster': 
-        model = EncoderForecaster(args.forecast_steps, 1, 1, [64, 64, 64, 64])
+        model = EncoderForecaster(args.forecast_steps)
     elif args.model == 'SmaAt_UNet': 
         model = SmaAt_UNet(args.input_steps, args.forecast_steps)
     if args.add_gan:
@@ -94,7 +95,7 @@ def main(args):
             args.input_steps, args.forecast_steps, args.batch_size, args.num_workers, 
             args.train_ratio, args.valid_ratio, args.lon_range, args.lat_range)
     if args.predict:
-        sample_loader = dataloader.load_sample(args.data_path, args.sample_index, args.input_steps, 
+        sample_loader = dataloader.load_sample(args.data_path, args.sample_indices, args.input_steps, 
             args.forecast_steps, args.lon_range, args.lat_range)
 
     # Nowcasting
@@ -106,7 +107,7 @@ def main(args):
     if args.add_gan:
         trainer = GANTrainer(args)
     else:
-        trainer = Trainer(args)
+        trainer = NNTrainer(args)
     if args.train or args.test:
         trainer.fit(model, train_loader, val_loader, test_loader)
     if args.predict:

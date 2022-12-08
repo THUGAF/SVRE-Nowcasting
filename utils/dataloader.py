@@ -77,24 +77,25 @@ class SampleDataset(TrainingDataset):
 
     Args:
         root (str): Root directory for the dataset.
+        sample_indices (List[int]): Indices of samples.
         input_steps (int): Number of input steps.
         forecast_steps (int): Number of input steps. 
         lon_range (List[int]): Longitude range for images.
         lat_range (List[int]): Latitude range for images.
     """
 
-    def __init__(self, root: str, sample_index: int, input_steps: int, forecast_steps: int, 
+    def __init__(self, root: str, sample_indices: int, input_steps: int, forecast_steps: int, 
                  lon_range: List[int], lat_range: List[int]):
         super().__init__(root, input_steps, forecast_steps, lon_range, lat_range)
-        self.sample_index = sample_index
+        self.sample_indices = sample_indices
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
-        files = self.locate_files(self.sample_index)
+        files = self.locate_files(self.sample_indices[index])
         tensor, timestamp = self.load_nc(files)
         return tensor, timestamp
 
     def __len__(self) -> int:
-        return 1
+        return len(self.sample_indices)
 
 
 def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int, num_workers: int, 
@@ -149,13 +150,13 @@ def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int,
     return train_loader, val_loader, test_loader
 
 
-def load_sample(root: str, sample_index: int, input_steps: int, forecast_steps: int, 
+def load_sample(root: str, sample_indices: List[int], input_steps: int, forecast_steps: int, 
                 lon_range: List[int], lat_range: List[int]) -> DataLoader:
     r"""Load sample data.
 
     Args:
         root (str): Path to the dataset.
-        sample_index (int): Index of the sample. Default is None, meaning the last sample is selected.
+        sample_indices (List[int]): Indices of samples.
         input_steps (int): Number of input steps.
         forecast_steps (int): Number of forecast steps.
         lon_range (List[int]): Longitude range for images.
@@ -165,6 +166,6 @@ def load_sample(root: str, sample_index: int, input_steps: int, forecast_steps: 
         DataLoader: Dataloader for sample.
     """
 
-    sample_set = SampleDataset(root, sample_index, input_steps, forecast_steps, lon_range, lat_range)
+    sample_set = SampleDataset(root, sample_indices, input_steps, forecast_steps, lon_range, lat_range)
     sample_loader = DataLoader(sample_set, batch_size=1)
     return sample_loader

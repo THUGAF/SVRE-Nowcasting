@@ -61,7 +61,7 @@ class EarlyStopping:
         self.val_loss_min = val_loss
 
 
-class Trainer:
+class NNTrainer:
     def __init__(self, args):
         self.args = args
 
@@ -113,7 +113,6 @@ class Trainer:
 
             # Train
             self.model.train()
-
             for i, (tensor, timestamp) in enumerate(self.train_loader):
                 # Check max iterations
                 self.current_iterations += 1
@@ -148,14 +147,13 @@ class Trainer:
                     ))
             
             self.train_loss.append(np.mean(train_loss))
+            print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.train_loss[-1]))
             np.savetxt(os.path.join(self.args.output_path, 'train_loss.txt'), self.train_loss)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
-            print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.train_loss[-1]))
 
             # Validate
             print('\n[Val]')
             self.model.eval()
-
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
                     tensor = tensor.to(self.args.device)
@@ -178,16 +176,14 @@ class Trainer:
                             epoch + 1, self.total_epochs, i + 1, len(self.val_loader), loss.item()
                         ))
                             
-            self.val_loss.append(np.mean(val_loss))            
+            self.val_loss.append(np.mean(val_loss))    
+            print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.val_loss[-1]))        
             np.savetxt(os.path.join(self.args.output_path, 'val_loss.txt'), self.val_loss)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
-            print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.val_loss[-1]))
-
             visualizer.plot_loss(self.train_loss, self.val_loss, self.args.output_path)
 
             # Save checkpoint
             self.save_checkpoint()
-
             if self.args.early_stopping:
                 early_stopping(self.val_loss[-1], self)
             if early_stopping.early_stop:
@@ -201,21 +197,17 @@ class Trainer:
             metrics['POD-%ddBZ' % threshold] = []
             metrics['FAR-%ddBZ' % threshold] = []
             metrics['CSI-%ddBZ' % threshold] = []
-            metrics['HSS-%ddBZ' % threshold] = []
         metrics['CC'] = []
         metrics['ME'] = []
         metrics['MAE'] = []
         metrics['RMSE'] = []
         metrics['SSIM'] = []
         metrics['PSNR'] = []
-        metrics['CVR'] = []
-        metrics['SSDR'] = []
         test_loss = []
         
         print('\n[Test]')
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        
         for i, (tensor, timestamp) in enumerate(self.test_loader):
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
@@ -240,48 +232,32 @@ class Trainer:
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-                metrics['HSS-%ddBZ' % threshold].append(hss)
             metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
             metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
             metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
             metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
             metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
             metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
-            metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
-            metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
-                    
+        
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
-        for threshold in self.args.thresholds:
-            metrics['POD-%ddBZ' % threshold] = np.mean(metrics['POD-%ddBZ' % threshold], axis=0)
-            metrics['FAR-%ddBZ' % threshold] = np.mean(metrics['FAR-%ddBZ' % threshold], axis=0)
-            metrics['CSI-%ddBZ' % threshold] = np.mean(metrics['CSI-%ddBZ' % threshold], axis=0)
-            metrics['HSS-%ddBZ' % threshold] = np.mean(metrics['HSS-%ddBZ' % threshold], axis=0)
-        metrics['CC'] = np.mean(metrics['CC'], axis=0)
-        metrics['ME'] = np.mean(metrics['ME'], axis=0)
-        metrics['MAE'] = np.mean(metrics['MAE'], axis=0)
-        metrics['RMSE'] = np.mean(metrics['RMSE'], axis=0)
-        metrics['SSIM'] = np.mean(metrics['SSIM'], axis=0)
-        metrics['PSNR'] = np.mean(metrics['PSNR'], axis=0)
-        metrics['CVR'] = np.mean(metrics['CVR'], axis=0)
-        metrics['SSDR'] = np.mean(metrics['SSDR'], axis=0)
-
+        for key in metrics.keys():
+            metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.8f', index=False)
+        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        
         print('Test done.')
 
     @torch.no_grad()
     def predict(self, model, sample_loader):
-        metrics = {}
-        metrics['Time'] = np.linspace(6, 60, 10)
-        
         print('\n[Predict]')
         self.model = model
         self.model.to(self.args.device)
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        
-        for tensor, timestamp in sample_loader:
+        for i, (tensor, timestamp) in enumerate(sample_loader):
+            metrics = {}
+            metrics['Time'] = np.linspace(6, 60, 10)
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
@@ -298,21 +274,18 @@ class Trainer:
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-                metrics['HSS-%ddBZ' % threshold] = hss
-
             metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
             metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
             metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
             metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
             metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
             metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
-            metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
-            metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
                     
-        df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
-        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample')
-        print('Predict done.')
+            df = pd.DataFrame(data=metrics)
+            df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
+            visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
+        
+        print('Prediction done.')
 
     def save_checkpoint(self, filename='checkpoint.pt'):
         states = {
@@ -394,7 +367,6 @@ class GANTrainer:
 
             # Train
             self.model.train()
-
             for i, (tensor, timestamp) in enumerate(self.train_loader):
                 # Check max iterations
                 self.current_iterations += 1
@@ -445,16 +417,16 @@ class GANTrainer:
             
             self.train_loss_g.append(np.mean(train_loss_g))
             self.train_loss_d.append(np.mean(train_loss_d))
+            print('Epoch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
+                epoch + 1, self.total_epochs, self.train_loss_g[-1], self.train_loss_d[-1]))
+            
             np.savetxt(os.path.join(self.args.output_path, 'train_loss_g.txt'), self.train_loss_g)
             np.savetxt(os.path.join(self.args.output_path, 'train_loss_d.txt'), self.train_loss_d)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
-            print('Epoch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
-                epoch + 1, self.total_epochs, self.train_loss_g[-1], self.train_loss_d[-1]))
-
+           
             # Validate
             print('\n[Val]')
             self.model.eval()
-
             with torch.no_grad():
                 for i, (tensor, timestamp) in enumerate(self.val_loader):
                     tensor = tensor.to(self.args.device)
@@ -487,13 +459,13 @@ class GANTrainer:
                         ))
                             
             self.val_loss_g.append(np.mean(val_loss_g))
-            self.val_loss_d.append(np.mean(val_loss_d))            
-            np.savetxt(os.path.join(self.args.output_path, 'val_loss_g.txt'), self.val_loss_g)
-            np.savetxt(os.path.join(self.args.output_path, 'val_loss_d.txt'), self.val_loss_d)
-            visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
+            self.val_loss_d.append(np.mean(val_loss_d))    
             print('Epoch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
                 epoch + 1, self.total_epochs, self.val_loss_g[-1], self.val_loss_d[-1]))
 
+            np.savetxt(os.path.join(self.args.output_path, 'val_loss_g.txt'), self.val_loss_g)
+            np.savetxt(os.path.join(self.args.output_path, 'val_loss_d.txt'), self.val_loss_d)
+            visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
             visualizer.plot_loss(self.train_loss_g, self.val_loss_g, self.args.output_path, 'loss_g.png')
             visualizer.plot_loss(self.train_loss_d, self.val_loss_d, self.args.output_path, 'loss_d.png')
 
@@ -513,22 +485,18 @@ class GANTrainer:
             metrics['POD-%ddBZ' % threshold] = []
             metrics['FAR-%ddBZ' % threshold] = []
             metrics['CSI-%ddBZ' % threshold] = []
-            metrics['HSS-%ddBZ' % threshold] = []
         metrics['CC'] = []
         metrics['ME'] = []
         metrics['MAE'] = []
         metrics['RMSE'] = []
         metrics['SSIM'] = []
         metrics['PSNR'] = []
-        metrics['CVR'] = []
-        metrics['SSDR'] = []
         test_loss_g = []
         test_loss_d = []
         
         print('\n[Test]')
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
-        
         for i, (tensor, timestamp) in enumerate(self.test_loader):
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
@@ -563,48 +531,33 @@ class GANTrainer:
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-                metrics['HSS-%ddBZ' % threshold].append(hss)
             metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
             metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
             metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
             metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
             metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
             metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
-            metrics['CVR'].append(evaluation.evaluate_cvr(pred, truth))
-            metrics['SSDR'].append(evaluation.evaluate_ssdr(pred, truth))
                     
         print('Loss G: {:.4f} Loss D: {:.4f}'.format(np.mean(test_loss_g), np.mean(test_loss_d)))
-        for threshold in self.args.thresholds:
-            metrics['POD-%ddBZ' % threshold] = np.mean(metrics['POD-%ddBZ' % threshold], axis=0)
-            metrics['FAR-%ddBZ' % threshold] = np.mean(metrics['FAR-%ddBZ' % threshold], axis=0)
-            metrics['CSI-%ddBZ' % threshold] = np.mean(metrics['CSI-%ddBZ' % threshold], axis=0)
-            metrics['HSS-%ddBZ' % threshold] = np.mean(metrics['HSS-%ddBZ' % threshold], axis=0)
-        metrics['CC'] = np.mean(metrics['CC'], axis=0)
-        metrics['ME'] = np.mean(metrics['ME'], axis=0)
-        metrics['MAE'] = np.mean(metrics['MAE'], axis=0)
-        metrics['RMSE'] = np.mean(metrics['RMSE'], axis=0)
-        metrics['SSIM'] = np.mean(metrics['SSIM'], axis=0)
-        metrics['PSNR'] = np.mean(metrics['PSNR'], axis=0)
-        metrics['CVR'] = np.mean(metrics['CVR'], axis=0)
-        metrics['SSDR'] = np.mean(metrics['SSDR'], axis=0)
-
+        for key in metrics.keys():
+            metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.8f', index=False)
+        df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        
         print('Test done.')
 
     @torch.no_grad()
     def predict(self, model, sample_loader):
-        metrics = {}
-        metrics['Time'] = np.linspace(6, 60, 10)
-        
         print('\n[Predict]')
         self.model = model
         self.model.generator.to(self.args.device)
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         
-        for tensor, timestamp in sample_loader:
+        for i, (tensor, timestamp) in enumerate(sample_loader):
+            metrics = {}
+            metrics['Time'] = np.linspace(6, 60, 10)
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
@@ -623,20 +576,17 @@ class GANTrainer:
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-                metrics['HSS-%ddBZ' % threshold] = hss
-
             metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
             metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
             metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
             metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
             metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
             metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
-            metrics['CVR'] = evaluation.evaluate_cvr(pred_rev, truth_rev)
-            metrics['SSDR'] = evaluation.evaluate_ssdr(pred_rev, truth_rev)
                     
-        df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(self.args.output_path, 'sample_metrics.csv'), float_format='%.8f', index=False)
-        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample')
+            df = pd.DataFrame(data=metrics)
+            df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
+            visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
+        
         print('Predict done.')
 
     def save_checkpoint(self, filename='checkpoint.pt'):
