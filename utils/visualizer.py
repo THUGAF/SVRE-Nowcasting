@@ -36,6 +36,7 @@ REF_NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), REF_CMAP.N)
 
 
 def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str = 'loss.png') -> None:
+    print('Plotting loss...')
     fig = plt.figure(figsize=(6, 4), dpi=300)
     ax = plt.subplot(111)
     ax.plot(range(1, len(train_loss) + 1), train_loss, 'b')
@@ -51,29 +52,29 @@ def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, time
     print('Plotting maps...')
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
-    _plot_map_figs(input_, root, timestamp[:, :input_.size(1)], stage, type='input', 
+    _plot_map_figs(input_, root, timestamp[:, :input_.size(1)], stage, type_='input', 
                    cmap=REF_CMAP, norm=REF_NORM)
     _plot_map_figs(pred, root, timestamp[:, input_.size(1): input_.size(1) + pred.size(1)], 
-                   stage, type='pred', cmap=REF_CMAP, norm=REF_NORM)
+                   stage, type_='pred', cmap=REF_CMAP, norm=REF_NORM)
     _plot_map_figs(truth, root, timestamp[:, input_.size(1): input_.size(1) + truth.size(1)], 
-                   stage, type='truth', cmap=REF_CMAP, norm=REF_NORM)
+                   stage, type_='truth', cmap=REF_CMAP, norm=REF_NORM)
 
 
-def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type: str, 
+def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type_: str, 
                    cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
-    path = os.path.join(root, stage, type)
+    path = os.path.join(root, stage, type_)
     if not os.path.exists(path):
         os.mkdir(path)
 
     # save tensor
     tensor = tensor.detach().cpu()
-    torch.save(tensor, '{}/{}.pt'.format(path, type))
+    torch.save(tensor, '{}/{}.pt'.format(path, type_))
 
     seq_len = tensor.size(1)
     image_list = []
     for i in range(seq_len):
         # minus represents the time before current moment
-        if type == 'input':
+        if type_ == 'input':
             str_min = str(6 * (i - seq_len + 1))
         else:
             str_min = str(6 * (i + 1))
@@ -92,11 +93,12 @@ def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, sta
         ax.axis('off')
     
     plt.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
-    fig.savefig('{}/{}.png'.format(path, type))
+    fig.savefig('{}/{}.png'.format(path, type_))
     plt.close(fig)
     
     # make gif
-    imageio.mimsave('{}/{}.gif'.format(path, type), image_list, 'GIF', duration=0.2)
+    imageio.mimsave('{}/{}.gif'.format(path, type_), image_list, 'GIF', duration=0.2)
+    print('{} saved'.format(type_))
 
 
 def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: datetime.datetime, 
@@ -135,8 +137,8 @@ def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: 
 
 
 def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
-    tensors = tensors.detach().cpu()
-    pred, truth = pred[0, 0, 0], truth[0, 0, 0]
+    print('Plotting PSD...')
+    pred, truth = pred[0, 0, 0].detach().cpu(), truth[0, 0, 0].cpu()
     len_y, len_x = pred.size(0), pred.size(1)
     xx, yy = np.arange(len_x), np.arange(len_y)
     xx, yy = np.meshgrid(xx, yy)
@@ -145,6 +147,8 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     freq_y, pred_psd_y = scipy.signal.welch(pred, nperseg=pred.shape[0], axis=0)
     _, truth_psd_x = scipy.signal.welch(truth, nperseg=truth.shape[1], axis=1)
     _, truth_psd_y = scipy.signal.welch(truth, nperseg=truth.shape[0], axis=0)
+    pred_psd_x, truth_psd_x = np.mean(pred_psd_x, axis=0)[1:], np.mean(truth_psd_x, axis=0)[1:]
+    pred_psd_y, truth_psd_y = np.mean(pred_psd_y, axis=1)[1:], np.mean(truth_psd_y, axis=1)[1:]
     wavelength_x = 1 / freq_x[1:]
     wavelength_y = 1 / freq_y[1:]
 
@@ -160,8 +164,8 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     }
     psd_x_df = pd.DataFrame(psd_x_data)
     psd_y_df = pd.DataFrame(psd_y_data)
-    psd_x_df.to_csv('{}/{}_psd_x.csv'.format(root, stage), float_format='%.8f', index=False)
-    psd_y_df.to_csv('{}/{}_psd_y.csv'.format(root, stage), float_format='%.8f', index=False)
+    psd_x_df.to_csv('{}/{}_psd_x.csv'.format(root, stage), float_format='%.6f', index=False)
+    psd_y_df.to_csv('{}/{}_psd_y.csv'.format(root, stage), float_format='%.6f', index=False)
 
     fig = plt.figure(figsize=(14, 6), dpi=600)
     ax1 = fig.add_subplot(1, 2, 1)
@@ -186,3 +190,4 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
 
     fig.savefig('{}/{}_psd.png'.format(root, stage), bbox_inches='tight')
     plt.close(fig)
+    print('PSD saved')

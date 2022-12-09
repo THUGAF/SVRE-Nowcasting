@@ -61,14 +61,17 @@ def predict(args):
         velocity = pysteps.motion.get_method('darts')(input_pysteps)
         pred_pystpes = pysteps.nowcasts.get_method('sprog')(input_pysteps[-2:], velocity, args.forecast_steps, 
                                                             R_thr=-10, ar_order=1)
+        # pred_pystpes = pysteps.nowcasts.get_method('extrapolation')(input_pysteps[-1], velocity, args.forecast_steps)
         pred = torch.from_numpy(np.nan_to_num(pred_pystpes)).view_as(truth)
 
         # visualization
-        print('Visualizing...')
+        print('\nVisualizing...')
         visualizer.plot_map(input_, pred, truth, timestamp, args.output_path, 'sample_{}'.format(i))
+        visualizer.plot_psd(pred, truth, args.output_path, 'sample_{}'.format(i))
+        print('Visualization done')
     
         # evaluation
-        print('Evaluating...')
+        print('\nEvaluating...')
         pred_rev, truth_rev = pred, truth
         pred = scaler.minmax_norm(pred, args.vmax, args.vmin)
         truth = scaler.minmax_norm(truth, args.vmax, args.vmin)
@@ -89,8 +92,9 @@ def predict(args):
         
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
+        print('Evaluation complete')
 
-        print('\nBaseline Done.')
+        print('\nAll tasks complete')
 
 
 if __name__ == '__main__':

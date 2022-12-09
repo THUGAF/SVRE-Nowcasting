@@ -113,7 +113,7 @@ def main(args):
     if args.predict:
         trainer.predict(model, sample_loader)
         
-    print('\nAll tasks have finished.')
+    print('\nAll tasks completed')
     
 
 if __name__ == '__main__':

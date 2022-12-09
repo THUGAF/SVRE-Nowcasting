@@ -149,7 +149,10 @@ class NNTrainer:
             self.train_loss.append(np.mean(train_loss))
             print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.train_loss[-1]))
             np.savetxt(os.path.join(self.args.output_path, 'train_loss.txt'), self.train_loss)
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
+            print('Visualization complete')
 
             # Validate
             print('\n[Val]')
@@ -179,8 +182,11 @@ class NNTrainer:
             self.val_loss.append(np.mean(val_loss))    
             print('Epoch: [{}][{}] Loss: {:.4f}'.format(epoch + 1, self.total_epochs, self.val_loss[-1]))        
             np.savetxt(os.path.join(self.args.output_path, 'val_loss.txt'), self.val_loss)
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
             visualizer.plot_loss(self.train_loss, self.val_loss, self.args.output_path)
+            print('Visualization complete')
 
             # Save checkpoint
             self.save_checkpoint()
@@ -240,13 +246,19 @@ class NNTrainer:
             metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
         
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
+        
+        print('\nEvaluating...')
         for key in metrics.keys():
             metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
-        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        print('Evaluation complete')
         
-        print('Test done.')
+        print('\nVisualizing...')
+        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        print('Visualization complete')
+
+        print('\nTest complete')
 
     @torch.no_grad()
     def predict(self, model, sample_loader):
@@ -269,6 +281,7 @@ class NNTrainer:
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
             truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
+            print('\nEvaluating...')
             for threshold in self.args.thresholds:
                 pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
@@ -283,9 +296,14 @@ class NNTrainer:
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
+            print('Evaluation complete')
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_psd(pred_rev, truth_rev, self.args.output_path, 'sample_{}'.format(i))
+            print('Visualization complete')
         
-        print('Prediction done.')
+        print('\nPrediction complete')
 
     def save_checkpoint(self, filename='checkpoint.pt'):
         states = {
@@ -422,7 +440,10 @@ class GANTrainer:
             
             np.savetxt(os.path.join(self.args.output_path, 'train_loss_g.txt'), self.train_loss_g)
             np.savetxt(os.path.join(self.args.output_path, 'train_loss_d.txt'), self.train_loss_d)
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
+            print('Visualization complete')
            
             # Validate
             print('\n[Val]')
@@ -465,9 +486,12 @@ class GANTrainer:
 
             np.savetxt(os.path.join(self.args.output_path, 'val_loss_g.txt'), self.val_loss_g)
             np.savetxt(os.path.join(self.args.output_path, 'val_loss_d.txt'), self.val_loss_d)
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
             visualizer.plot_loss(self.train_loss_g, self.val_loss_g, self.args.output_path, 'loss_g.png')
             visualizer.plot_loss(self.train_loss_d, self.val_loss_d, self.args.output_path, 'loss_d.png')
+            print('Visualization complete')
 
             # Save checkpoint
             self.save_checkpoint()
@@ -539,13 +563,19 @@ class GANTrainer:
             metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
                     
         print('Loss G: {:.4f} Loss D: {:.4f}'.format(np.mean(test_loss_g), np.mean(test_loss_d)))
+
+        print('\nEvaluating...')
         for key in metrics.keys():
             metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
+        print('Evaluation complete')
+
+        print('\nVisualizing...')
         visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
-        
-        print('Test done.')
+        print('Visualization complete')
+
+        print('\nTest complete')
 
     @torch.no_grad()
     def predict(self, model, sample_loader):
@@ -571,6 +601,7 @@ class GANTrainer:
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
             truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
+            print('\nEvaluating...')
             for threshold in self.args.thresholds:
                 pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
@@ -585,9 +616,14 @@ class GANTrainer:
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
+            print('Evaluation complete')
+
+            print('\nVisualizing...')
             visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_psd(pred_rev, truth_rev, self.args.output_path, 'sample_{}'.format(i))
+            print('Visualization complete')
         
-        print('Predict done.')
+        print('\nPrediction complete')
 
     def save_checkpoint(self, filename='checkpoint.pt'):
         states = {

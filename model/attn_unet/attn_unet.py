@@ -16,35 +16,35 @@ class AttnUNet(nn.Module):
         self.down1 = DoubleConv2d(32, 64, kernel_size=3, stride=2, padding=1)
         self.down2 = DoubleConv2d(64, 128, kernel_size=3, stride=2, padding=1)
         self.down3 = DoubleConv2d(128, 256, kernel_size=3, stride=2, padding=1)
-        self.down4 = DoubleConv2d(256, 256, kernel_size=3, stride=2, padding=1)
+        self.down4 = DoubleConv2d(256, 512, kernel_size=3, stride=2, padding=1)
 
         # Dilation convolutions
         self.dilated_conv1 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True)
         )
         self.dilated_conv2 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=2, padding=2),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, dilation=2, padding=2),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True)
         )
         self.dilated_conv3 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=4, padding=4),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, dilation=4, padding=4),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True)
         )
         self.dilated_conv4 = nn.Sequential(
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=8, padding=8),
-            nn.BatchNorm2d(256),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, dilation=8, padding=8),
+            nn.BatchNorm2d(512),
             nn.ReLU(inplace=True)
         )
 
         # Decoder
         if self.add_noise:
-            self.up4 = DoubleDeconv2d(768, 256, kernel_size=4, stride=2, padding=1)
+            self.up4 = DoubleDeconv2d(1536, 256, kernel_size=4, stride=2, padding=1)
         else:
-            self.up4 = DoubleDeconv2d(512, 256, kernel_size=4, stride=2, padding=1)
+            self.up4 = DoubleDeconv2d(1024, 256, kernel_size=4, stride=2, padding=1)
         self.up3 = DoubleDeconv2d(512, 128, kernel_size=4, stride=2, padding=1)
         self.up2 = DoubleDeconv2d(256, 64, kernel_size=4, stride=2, padding=1)
         self.up1 = DoubleDeconv2d(128, 32, kernel_size=4, stride=2, padding=1)
