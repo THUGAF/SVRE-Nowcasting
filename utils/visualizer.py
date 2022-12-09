@@ -184,7 +184,7 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     ax2.set_xscale('log', base=2)
     ax2.set_yscale('log', base=10)
     ax2.invert_xaxis()
-    ax2.set_xlabel('Wave length (deg)', fontsize=12)
+    ax2.set_xlabel('Wave length (km)', fontsize=12)
     ax2.set_ylabel('Power Spectral Density of Y axis', fontsize=12)
     ax2.legend(['Prediction', 'Observation'])
 

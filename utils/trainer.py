@@ -268,6 +268,7 @@ class NNTrainer:
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
         for i, (tensor, timestamp) in enumerate(sample_loader):
+            print('\nSample {}'.format(i))
             metrics = {}
             metrics['Time'] = np.linspace(6, 60, 10)
             tensor = tensor.to(self.args.device)
@@ -586,6 +587,7 @@ class GANTrainer:
         self.model.eval()
         
         for i, (tensor, timestamp) in enumerate(sample_loader):
+            print('\nSample {}'.format(i))
             metrics = {}
             metrics['Time'] = np.linspace(6, 60, 10)
             tensor = tensor.to(self.args.device)
