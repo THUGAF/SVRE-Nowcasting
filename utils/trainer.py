@@ -68,6 +68,7 @@ class NNTrainer:
     def fit(self, model, train_loader, val_loader, test_loader):
         self.model = model
         self.model.to(self.args.device)
+        self.count_params()
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -214,6 +215,8 @@ class NNTrainer:
         print('\n[Test]')
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
+        self.count_params()
+
         for i, (tensor, timestamp) in enumerate(self.test_loader):
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
@@ -267,6 +270,8 @@ class NNTrainer:
         self.model.to(self.args.device)
         self.model.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
+        self.count_params()
+
         for i, (tensor, timestamp) in enumerate(sample_loader):
             print('\nSample {}'.format(i))
             metrics = {}
@@ -319,6 +324,12 @@ class NNTrainer:
     def load_checkpoint(self, filename='checkpoint.pt'):
         states = torch.load(os.path.join(self.args.output_path, filename), map_location=self.args.device)
         return states
+    
+    def count_params(self):
+        model_params = filter(lambda p: p.requires_grad, self.model.parameters())
+        num_params = sum([p.numel() for p in model_params])
+        print('\nModel name: {}'.format(type(self.model).__name__))
+        print('Total params: {}'.format(num_params))
 
 
 class GANTrainer:
@@ -329,6 +340,7 @@ class GANTrainer:
         self.model = model
         self.model.generator.to(self.args.device)
         self.model.discriminator.to(self.args.device)
+        self.count_params()
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -341,7 +353,7 @@ class GANTrainer:
         self.optimizer_g = Adam(self.model.generator.parameters(), lr=self.args.lr,
                                 betas=(self.args.beta1, self.args.beta2),
                                 weight_decay=self.args.weight_decay)
-        self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr * 2,
+        self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr / 2,
                                 betas=(self.args.beta1, self.args.beta2),
                                 weight_decay=self.args.weight_decay)
         self.scheduler_g = StepLR(self.optimizer_g, step_size=2000, gamma=0.5)
@@ -406,7 +418,7 @@ class GANTrainer:
                 
                 # Backward propagation
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
-                loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+                loss_d = losses.cal_d_loss(fake_score, real_score)
                 self.optimizer_d.zero_grad()
                 loss_d.backward()
                 self.optimizer_d.step()
@@ -415,9 +427,9 @@ class GANTrainer:
                 fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                 pred = torch.mean(torch.stack(preds), dim=0)
-                loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
-                    losses.cv_loss(pred, truth) * self.args.var_reg + \
-                    losses.cal_g_loss(fake_score) * self.args.gan_reg
+                loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
+                    self.args.var_reg * losses.cv_loss(pred, truth) + \
+                    self.args.gan_reg * losses.cal_g_loss(fake_score)
                 self.optimizer_g.zero_grad()
                 loss_g.backward()
                 self.optimizer_g.step()
@@ -462,12 +474,12 @@ class GANTrainer:
                     real_score = self.model.discriminator(tensor)
                     fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
                     fake_score = torch.mean(torch.stack(fake_scores), dim=0)
-                    loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+                    loss_d = losses.cal_d_loss(fake_score, real_score)
 
                     pred = torch.mean(torch.stack(preds), dim=0)
-                    loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
-                        losses.cv_loss(pred, truth) * self.args.var_reg + \
-                        losses.cal_g_loss(fake_score) * self.args.gan_reg
+                    loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
+                        self.args.var_reg * losses.cv_loss(pred, truth) + \
+                        self.args.gan_reg * losses.cal_g_loss(fake_score)
 
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -522,6 +534,8 @@ class GANTrainer:
         print('\n[Test]')
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
+        self.count_params()
+
         for i, (tensor, timestamp) in enumerate(self.test_loader):
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
@@ -534,12 +548,12 @@ class GANTrainer:
             real_score = self.model.discriminator(tensor)
             fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
             fake_score = torch.mean(torch.stack(fake_scores), dim=0)
-            loss_d = losses.cal_d_loss(fake_score, real_score) * self.args.gan_reg
+            loss_d = losses.cal_d_loss(fake_score, real_score)
             
             pred = torch.mean(torch.stack(preds), dim=0)
-            loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax) + \
-                losses.cv_loss(pred, truth) * self.args.var_reg + \
-                losses.cal_g_loss(fake_score) * self.args.gan_reg
+            loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
+                self.args.var_reg * losses.cv_loss(pred, truth) + \
+                self.args.gan_reg * losses.cal_g_loss(fake_score)
 
             input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -585,6 +599,7 @@ class GANTrainer:
         self.model.generator.to(self.args.device)
         self.model.generator.load_state_dict(self.load_checkpoint('bestmodel.pt')['model'])
         self.model.eval()
+        self.count_params()
         
         for i, (tensor, timestamp) in enumerate(sample_loader):
             print('\nSample {}'.format(i))
@@ -644,3 +659,13 @@ class GANTrainer:
     def load_checkpoint(self, filename='checkpoint.pt'):
         states = torch.load(os.path.join(self.args.output_path, filename), map_location=self.args.device)
         return states
+
+    def count_params(self):
+        G_params = filter(lambda p: p.requires_grad, self.model.generator.parameters())
+        D_params = filter(lambda p: p.requires_grad, self.model.discriminator.parameters())
+        num_G_params = sum([p.numel() for p in G_params])
+        num_D_params = sum([p.numel() for p in D_params])
+        print('\nModel name: {}'.format(type(self.model).__name__))
+        print('G params: {}'.format(num_G_params))
+        print('D params: {}'.format(num_D_params))
+        print('Total params: {}'.format(num_G_params + num_D_params))

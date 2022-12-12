@@ -34,13 +34,15 @@ class Discriminator(nn.Module):
 
     def __init__(self, total_steps: int):
         super(Discriminator, self).__init__()
-        self.d1 = Down(total_steps, 32)         # (128, 128)
-        self.d2 = Down(32, 32)                  # (64, 64)
-        self.d3 = Down(32, 64)                  # (32, 32)
-        self.d4 = Down(64, 128)                 # (16, 16)
-        self.d5 = Down(128, 256)                # (8, 8)
-        self.d6 = Down(256, 256)                # (4, 4)
+        self.d1 = nn.Conv2d(total_steps, 32, kernel_size=1)         # (256, 256)
+        self.d2 = DoubleConv2d(32, 64, kernel_size=3, padding=1)    # (128, 128)
+        self.d3 = DoubleConv2d(64, 64, kernel_size=3, padding=1)    # (64, 64)
+        self.d4 = DoubleConv2d(64, 128, kernel_size=3, padding=1)   # (32, 32)
+        self.d5 = DoubleConv2d(128, 128, kernel_size=3, padding=1)  # (16, 16)
+        self.d6 = DoubleConv2d(128, 256, kernel_size=3, padding=1)  # (8, 8)
+        self.d7 = DoubleConv2d(256, 256, kernel_size=3, padding=1)  # (4, 4)
         self.last = nn.Conv2d(256, 1, kernel_size=4)
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         # Embed L into channel dimension
@@ -53,40 +55,32 @@ class Discriminator(nn.Module):
         h = self.d4(h)
         h = self.d5(h)
         h = self.d6(h)
+        h = self.d7(h)
         out = self.last(h)
         # out: (B, 1)
         out = out.reshape(batch_size, 1)
+        out = self.sigmoid(out)
         return out
 
 
 class DoubleConv2d(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, padding: int = 1):
-        super(DoubleConv2d, self).__init__()
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3,
+                 stride: int = 1, dilation: int = 1, padding: int = 1):
+        super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, padding=padding),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
-            nn.LeakyReLU(0.2)
+            nn.ReLU(inplace=True)
         )
         self.attn = CBAM(out_channels)
-    
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         out = self.conv(x)
         out = self.attn(out)
-        return out
-
-
-class Down(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3, padding: int = 1):
-        super(Down, self).__init__()
-        self.downscaler = nn.MaxPool2d(2, 2)
-        self.conv = DoubleConv2d(in_channels, out_channels, kernel_size, padding)
-    
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        x = self.downscaler(x)
-        out = self.conv(x)
         return out
 
 

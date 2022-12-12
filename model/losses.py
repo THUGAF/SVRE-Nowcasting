@@ -31,33 +31,6 @@ def cv_loss(pred: torch.Tensor, truth: torch.Tensor, eps: float = 1e-8) -> torch
     return F.l1_loss(pred_cv, truth_cv)
 
 
-def ssd(tensor: torch.Tensor) -> torch.Tensor:
-    left_pad = F.pad(tensor, (1, 0, 0, 0))
-    right_pad = F.pad(tensor, (0, 1, 0, 0))
-    up_pad = F.pad(tensor, (0, 0, 1, 0))
-    bottom_pad = F.pad(tensor, (0, 0, 0, 1))
-
-    diff_h = left_pad - right_pad
-    diff_v = up_pad - bottom_pad
-    ssd = torch.sum(diff_h[:, :, 1:-1] ** 2) + torch.sum(diff_v[:, :, 1:-1] ** 2)
-    return ssd
-
-
-def ssd_loss(pred: torch.Tensor, truth: torch.Tensor) -> torch.Tensor:
-    pred, truth = pred.cpu(), truth.cpu()
-    batch_size, seq_len = pred.size(0), pred.size(1)
-    
-    pred_ssd_list = []
-    truth_ssd_list = []
-    for s in range(seq_len):
-        pred_ssd = ssd(pred[:, s]) / batch_size
-        truth_ssd = ssd(truth[:, s]) / batch_size
-        pred_ssd_list.append(pred_ssd)
-        truth_ssd_list.append(truth_ssd)
-    
-    return F.l1_loss(torch.tensor(pred_ssd_list), torch.tensor(truth_ssd_list))
-
-
 def cal_d_loss(fake_score: torch.Tensor, real_score: torch.Tensor, loss_func: Callable = nn.MSELoss()) -> torch.Tensor:
     """Calculate loss function of the discriminators.
 

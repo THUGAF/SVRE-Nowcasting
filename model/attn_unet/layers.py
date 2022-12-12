@@ -4,15 +4,14 @@ import torch.nn as nn
 
 class DoubleConv2d(nn.Module):
     def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3,
-                 stride: int = 2, dilation: int = 1, padding: int = 1):
+                 stride: int = 1, dilation: int = 1, padding: int = 1):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.Conv2d(in_channels, out_channels, kernel_size, stride,
-                      padding=padding, dilation=dilation),
+            nn.MaxPool2d(2, 2),
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size,
-                      padding=padding, dilation=dilation),
+            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
@@ -25,16 +24,15 @@ class DoubleConv2d(nn.Module):
 
 
 class DoubleDeconv2d(nn.Module):
-    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 4,
-                 stride: int = 2, dilation: int = 1, padding: int = 1, output_padding: int = 0):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int = 3,
+                 stride: int = 1, dilation: int = 1, padding: int = 1):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.ConvTranspose2d(in_channels, out_channels, kernel_size, stride,
-                               padding=padding, dilation=dilation, output_padding=output_padding),
+            nn.UpsamplingBilinear2d(scale_factor=2),
+            nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
-            nn.Conv2d(out_channels, out_channels, kernel_size - 1,
-                      padding=padding, dilation=dilation),
+            nn.Conv2d(out_channels, out_channels, kernel_size, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True)
         )
