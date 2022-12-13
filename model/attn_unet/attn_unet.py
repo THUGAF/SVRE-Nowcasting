@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from torch.distributions import Normal
-from .layers import DoubleConv2d, DoubleDeconv2d
+from .layers import DoubleConv2d
 
 
 class AttnUNet(nn.Module):
@@ -12,11 +12,12 @@ class AttnUNet(nn.Module):
         self.add_noise = add_noise
 
         # Encoder
+        self.downsampling = nn.MaxPool2d(2, 2)
         self.in_conv = nn.Conv2d(input_steps, 32, kernel_size=1)
-        self.down1 = DoubleConv2d(32, 64, kernel_size=3, padding=1)
-        self.down2 = DoubleConv2d(64, 128, kernel_size=3, padding=1)
-        self.down3 = DoubleConv2d(128, 256, kernel_size=3, padding=1)
-        self.down4 = DoubleConv2d(256, 256, kernel_size=3, padding=1)
+        self.conv1 = DoubleConv2d(32, 64, kernel_size=3, padding=1)
+        self.conv2 = DoubleConv2d(64, 128, kernel_size=3, padding=1)
+        self.conv3 = DoubleConv2d(128, 256, kernel_size=3, padding=1)
+        self.conv4 = DoubleConv2d(256, 256, kernel_size=3, padding=1)
 
         # Dilation convolutions
         self.dilated_conv1 = nn.Sequential(
@@ -41,13 +42,14 @@ class AttnUNet(nn.Module):
         )
 
         # Decoder
+        self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
         if self.add_noise:
-            self.up4 = DoubleDeconv2d(768, 256, kernel_size=3, padding=1)
+            self.deconv4 = DoubleConv2d(768, 128, kernel_size=3, padding=1)
         else:
-            self.up4 = DoubleDeconv2d(512, 256, kernel_size=3, padding=1)
-        self.up3 = DoubleDeconv2d(512, 128, kernel_size=3, padding=1)
-        self.up2 = DoubleDeconv2d(256, 64, kernel_size=3, padding=1)
-        self.up1 = DoubleDeconv2d(128, 32, kernel_size=3, padding=1)
+            self.deconv4 = DoubleConv2d(512, 128, kernel_size=3, padding=1)
+        self.deconv3 = DoubleConv2d(256, 64, kernel_size=3, padding=1)
+        self.deconv2 = DoubleConv2d(128, 32, kernel_size=3, padding=1)
+        self.deconv1 = DoubleConv2d(64, 32, kernel_size=3, padding=1)
         self.out_conv = nn.Conv2d(32, forecast_steps, kernel_size=1)
         self.relu = nn.ReLU()
 
@@ -58,25 +60,25 @@ class AttnUNet(nn.Module):
 
         # Encoding step
         h1 = self.in_conv(h)
-        h2 = self.down1(h1)
-        h3 = self.down2(h2)
-        h4 = self.down3(h3)
-        h5 = self.down4(h4)
+        h2 = self.conv1(self.downsampling(h1))
+        h3 = self.conv2(self.downsampling(h2))
+        h4 = self.conv3(self.downsampling(h3))
+        h5 = self.conv4(self.downsampling(h4))
 
         # Dilation step
-        hd = self.dilated_conv1(h5)
-        hd = self.dilated_conv2(hd)
-        hd = self.dilated_conv3(hd)
-        hd = self.dilated_conv4(hd)
+        h5 = self.dilated_conv1(h5)
+        h5 = self.dilated_conv2(h5)
+        h5 = self.dilated_conv3(h5)
+        h5 = self.dilated_conv4(h5)
 
         # Decoding step
         if self.add_noise:
-            z = Normal(0, 1).sample(hd.size()).type_as(hd)
-            hd = torch.cat([hd, z], dim=1)
-        h4p = self.up4(torch.cat([hd, h5], dim=1))
-        h3p = self.up3(torch.cat([h4p, h4], dim=1))
-        h2p = self.up2(torch.cat([h3p, h3], dim=1))
-        h1p = self.up1(torch.cat([h2p, h2], dim=1))
+            z = Normal(0, 1).sample(h5.size()).type_as(h5)
+            h5 = torch.cat([h5, z], dim=1)
+        h4p = self.deconv4(torch.cat([self.upsampling(h5), h4], dim=1))
+        h3p = self.deconv3(torch.cat([self.upsampling(h4p), h3], dim=1))
+        h2p = self.deconv2(torch.cat([self.upsampling(h3p), h2], dim=1))
+        h1p = self.deconv1(torch.cat([self.upsampling(h2p), h1], dim=1))
         out = self.out_conv(h1p)
         out = out.reshape(batch_size, -1, channels, height, width)
         out = self.relu(out)

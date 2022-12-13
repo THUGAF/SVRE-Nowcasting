@@ -34,6 +34,7 @@ class Discriminator(nn.Module):
 
     def __init__(self, total_steps: int):
         super(Discriminator, self).__init__()
+        self.downsampling = nn.MaxPool2d(2, 2)
         self.d1 = nn.Conv2d(total_steps, 32, kernel_size=1)         # (256, 256)
         self.d2 = DoubleConv2d(32, 64, kernel_size=3, padding=1)    # (128, 128)
         self.d3 = DoubleConv2d(64, 64, kernel_size=3, padding=1)    # (64, 64)
@@ -49,13 +50,13 @@ class Discriminator(nn.Module):
         batch_size, length, channels, height, width = x.size()
         # (B, L, C, H, W) -> (B, C*L, H, W)
         h = x.reshape(batch_size, length * channels, height, width)
-        h = self.d1(h)
-        h = self.d2(h)
-        h = self.d3(h)
-        h = self.d4(h)
-        h = self.d5(h)
-        h = self.d6(h)
-        h = self.d7(h)
+        h = self.d1(self.downsampling(h))
+        h = self.d2(self.downsampling(h))
+        h = self.d3(self.downsampling(h))
+        h = self.d4(self.downsampling(h))
+        h = self.d5(self.downsampling(h))
+        h = self.d6(self.downsampling(h))
+        h = self.d7(self.downsampling(h))
         out = self.last(h)
         # out: (B, 1)
         out = out.reshape(batch_size, 1)
@@ -68,7 +69,6 @@ class DoubleConv2d(nn.Module):
                  stride: int = 1, dilation: int = 1, padding: int = 1):
         super().__init__()
         self.conv = nn.Sequential(
-            nn.MaxPool2d(2, 2),
             nn.Conv2d(in_channels, out_channels, kernel_size, stride, padding=padding, dilation=dilation),
             nn.BatchNorm2d(out_channels),
             nn.ReLU(inplace=True),
