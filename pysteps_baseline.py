@@ -17,7 +17,7 @@ warnings.filterwarnings('ignore')
 parser = argparse.ArgumentParser(description='PySTEPS Basline')
 
 # global settings
-parser.add_argument('--data-path', type=str, default='/data/gaf/SBandCRUnzip')
+parser.add_argument('--data-path', type=str, default='/data/gaf/SBandCRPt')
 parser.add_argument('--output-path', type=str, default='results/PySTEPS')
 parser.add_argument('--sample-indices', type=int, nargs='+', default=[0])
 parser.add_argument('--lon-range', type=int, nargs='+', default=[271, 527])

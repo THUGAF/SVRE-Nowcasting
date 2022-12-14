@@ -3,7 +3,6 @@ import os
 import torch
 from torch.utils.data import DataLoader, Dataset, Subset
 import numpy as np
-import netCDF4 as nc
 
 
 class TrainingDataset(Dataset):
@@ -41,7 +40,7 @@ class TrainingDataset(Dataset):
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         files = self.locate_files(index)
-        tensor, timestamp = self.load_nc(files)
+        tensor, timestamp = self.load_pt(files)
         return tensor, timestamp
     
     def __len__(self) -> int:
@@ -56,17 +55,14 @@ class TrainingDataset(Dataset):
         files = self.files[file_anchor: file_anchor + self.total_steps]
         return files
     
-    def load_nc(self, files: list) -> Tuple[torch.Tensor, torch.Tensor]:
+    def load_pt(self, files: list) -> Tuple[torch.Tensor, torch.Tensor]:
         tensor = []
         timestamp = []
         for file_ in files:
-            nc_file = nc.Dataset(file_)
-            dbz = torch.from_numpy(nc_file.variables['DBZ'][:])
-            dbz = dbz[:, self.lat_range[0]: self.lat_range[1], self.lon_range[0]: self.lon_range[1]]
-            second = float(nc_file.variables['time'][:])
-            tensor.append(dbz)
-            timestamp.append(np.int64(second))
-            nc_file.close()
+            tensor_single, timestamp_single = torch.load(file_)
+            tensor_single = tensor_single[:, self.lat_range[0]: self.lat_range[1], self.lon_range[0]: self.lon_range[1]]
+            tensor.append(tensor_single)
+            timestamp.append(timestamp_single)
         tensor = torch.stack(tensor)
         timestamp = torch.LongTensor(timestamp)
         return tensor, timestamp
@@ -91,7 +87,7 @@ class SampleDataset(TrainingDataset):
 
     def __getitem__(self, index: int) -> Tuple[torch.Tensor, torch.Tensor]:
         files = self.locate_files(self.sample_indices[index])
-        tensor, timestamp = self.load_nc(files)
+        tensor, timestamp = self.load_pt(files)
         return tensor, timestamp
 
     def __len__(self) -> int:
