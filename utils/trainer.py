@@ -5,8 +5,6 @@ import numpy as np
 import pandas as pd
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 
@@ -130,8 +128,8 @@ class NNTrainer:
                 pred = self.model(input_)
 
                 # Backward propagation
-                loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                    + self.args.var_reg * losses.cv_loss(pred, truth)
+                loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                    + self.args.lambda_var * losses.cv_loss(pred, truth)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
@@ -167,8 +165,8 @@ class NNTrainer:
                     input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     pred = self.model(input_)
-                    loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                        + self.args.var_reg * losses.cv_loss(pred, truth)
+                    loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                        + self.args.lambda_var * losses.cv_loss(pred, truth)
                     
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -225,8 +223,8 @@ class NNTrainer:
             input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             pred = self.model(input_)
-            loss = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                + self.args.var_reg * losses.cv_loss(pred, truth)
+            loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
+                + self.args.lambda_var * losses.cv_loss(pred, truth)
 
             input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -355,7 +353,7 @@ class GANTrainer:
                                 weight_decay=self.args.weight_decay)
         self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr / 2,
                                 betas=(self.args.beta1, self.args.beta2),
-                                weight_decay=self.args.weight_decay)
+                                weight_decay=self.args.weight_decay * 1e2)
         self.scheduler_g = StepLR(self.optimizer_g, step_size=2000, gamma=0.5)
         self.scheduler_d = StepLR(self.optimizer_d, step_size=2000, gamma=0.5)
 
@@ -411,7 +409,6 @@ class GANTrainer:
                 truth = tensor[:, self.args.input_steps:]
                 input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-
                 preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
                 real_score = self.model.discriminator(tensor)
                 fake_scores = [self.model.discriminator(torch.cat([input_, pred.detach()], dim=1)) for pred in preds]
@@ -427,9 +424,9 @@ class GANTrainer:
                 fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                 pred = torch.mean(torch.stack(preds), dim=0)
-                loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
-                    self.args.var_reg * losses.cv_loss(pred, truth) + \
-                    self.args.gan_reg * losses.cal_g_loss(fake_score)
+                loss_g = losses.cal_g_loss(fake_score) + \
+                    self.args.lambda_var * losses.cv_loss(pred, truth) + \
+                    self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)  
                 self.optimizer_g.zero_grad()
                 loss_g.backward()
                 self.optimizer_g.step()
@@ -477,9 +474,9 @@ class GANTrainer:
                     loss_d = losses.cal_d_loss(fake_score, real_score)
 
                     pred = torch.mean(torch.stack(preds), dim=0)
-                    loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
-                        self.args.var_reg * losses.cv_loss(pred, truth) + \
-                        self.args.gan_reg * losses.cal_g_loss(fake_score)
+                    loss_g = losses.cal_g_loss(fake_score) + \
+                        self.args.lambda_var * losses.cv_loss(pred, truth) + \
+                        self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)
 
                     input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
                     pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
@@ -551,9 +548,9 @@ class GANTrainer:
             loss_d = losses.cal_d_loss(fake_score, real_score)
             
             pred = torch.mean(torch.stack(preds), dim=0)
-            loss_g = losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) + \
-                self.args.var_reg * losses.cv_loss(pred, truth) + \
-                self.args.gan_reg * losses.cal_g_loss(fake_score)
+            loss_g = losses.cal_g_loss(fake_score) + \
+                self.args.lambda_var * losses.cv_loss(pred, truth) + \
+                self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)
 
             input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
             pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)

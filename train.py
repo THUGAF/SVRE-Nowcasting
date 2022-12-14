@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore')
 parser = argparse.ArgumentParser()
 
 # input and output settings
-parser.add_argument('--data-path', type=str, default='/data/gaf/SBandCRUnzip')
+parser.add_argument('--data-path', type=str, default='/data/gaf/SBandCRPt')
 parser.add_argument('--output-path', type=str, default='results/AttnUNet')
 parser.add_argument('--input-steps', type=int, default=10)
 parser.add_argument('--forecast-steps', type=int, default=10)
@@ -39,9 +39,9 @@ parser.add_argument('--start-iterations', type=int, default=0)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--beta1', type=float, default=0.9)
 parser.add_argument('--beta2', type=float, default=0.999)
-parser.add_argument('--weight-decay', type=float, default=1e-4)
-parser.add_argument('--var-reg', type=float, default=0)
-parser.add_argument('--gan-reg', type=float, default=0.1)
+parser.add_argument('--weight-decay', type=float, default=1e-2)
+parser.add_argument('--lambda-var', type=float, default=0)
+parser.add_argument('--lambda-rec', type=float, default=10)
 parser.add_argument('--num-threads', type=int, default=1)
 parser.add_argument('--num-workers', type=int, default=1)
 parser.add_argument('--display-interval', type=int, default=1)
@@ -69,8 +69,11 @@ def main(args):
     print('Input time range: {} min'.format(str(args.input_steps * args.resolution)))
     print('Forecast time range: {} min'.format(str(args.forecast_steps * args.resolution)))
 
-    # fix the random seed
-    torch.backends.cudnn.enabled = False
+    # Use cuDNN
+    torch.backends.cudnn.enabled = True
+    torch.backends.cudnn.benchmark = True
+
+    # Fix the random seed
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     torch.cuda.manual_seed_all(args.seed)

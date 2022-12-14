@@ -44,7 +44,7 @@ def cal_d_loss(fake_score: torch.Tensor, real_score: torch.Tensor, loss_func: Ca
     label = torch.ones_like(fake_score).type_as(fake_score)
     loss_pred = loss_func(fake_score, label * 0.0)
     loss_truth = loss_func(real_score, label * 1.0)
-    d_loss = (loss_pred + loss_truth) / 2
+    d_loss = loss_pred + loss_truth
     return d_loss
 
 
