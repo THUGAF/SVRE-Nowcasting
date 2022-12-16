@@ -39,9 +39,9 @@ parser.add_argument('--start-iterations', type=int, default=0)
 parser.add_argument('--lr', type=float, default=1e-4)
 parser.add_argument('--beta1', type=float, default=0.9)
 parser.add_argument('--beta2', type=float, default=0.999)
-parser.add_argument('--weight-decay', type=float, default=1e-2)
+parser.add_argument('--weight-decay', type=float, default=1e-4)
 parser.add_argument('--lambda-var', type=float, default=0)
-parser.add_argument('--lambda-rec', type=float, default=10)
+parser.add_argument('--lambda-rec', type=float, default=100)
 parser.add_argument('--num-threads', type=int, default=1)
 parser.add_argument('--num-workers', type=int, default=1)
 parser.add_argument('--display-interval', type=int, default=1)
@@ -55,7 +55,7 @@ parser.add_argument('--vmax', type=float, default=70.0)
 parser.add_argument('--vmin', type=float, default=-10.0)
 
 # evaluation settings
-parser.add_argument('--thresholds', type=int, nargs='+', default=[10, 20, 30, 40])
+parser.add_argument('--thresholds', type=int, nargs='+', default=[30, 40])
 
 args = parser.parse_args()
 

@@ -33,76 +33,25 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
 
 def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, eps: float = 1e-4) \
     -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    r"""To calculate POD, FAR, CSI and HSS for the prediction at each time step.
+    r"""To calculate POD, FAR, CSI for the prediction at each time step.
     
     Args:
         pred (torch.Tensor): The prediction sequence in tensor form with 5D shape `(S, B, C, H, W)`.
         truth (torch.Tensor): The ground truth sequence in tensor form with 5D shape `(S, B, C, H, W)`.
-        threshold (float, optional): The threshold of POD, FAR, CSI and HSS. Range: (0, 1).
+        threshold (float, optional): The threshold of POD, FAR, CSI. Range: (0, 1).
     
     Return:
         numpy.ndarray: POD at each time step.
         numpy.ndarray: FAR at each time step.
         numpy.ndarray: CSI at each time step.
-        numpy.ndarray: HSS at each time step.
     """
 
     h, m, f, c = _count(pred, truth, threshold)
     pod = h / (h + m + eps)
     far = f / (h + f + eps)
     csi = h / (h + m + f + eps)
-    hss = 2 * (h * c - m * f) / ((h + m) * (m + c) + (h + f) * (f + c) + eps)
-    return pod, far, csi, hss
+    return pod, far, csi
 
-
-def evaluate_ssd(tensor: torch.Tensor) -> np.ndarray:
-    r"""To calculate SSD for the prediction at each time step.
-
-    Args:
-        tensor (torch.Tensor): Tensor with 5D shape `(S, B, C, H, W)`.
-    Return:
-        numpy.ndarray: SSD at each time step.
-    """
-
-    tensor = tensor.cpu()
-    tensor = scaler.convert_to_gray(tensor)
-    batch_size, seq_len = tensor.size(0), tensor.size(1)
-    
-    ssd_list = []
-    for s in range(seq_len):
-        left_pad = F.pad(tensor[:, s], (1, 0, 0, 0))
-        right_pad = F.pad(tensor[:, s], (0, 1, 0, 0))
-        up_pad = F.pad(tensor[:, s], (0, 0, 1, 0))
-        bottom_pad = F.pad(tensor[:, s], (0, 0, 0, 1))
-
-        diff_h = left_pad - right_pad
-        diff_v = up_pad - bottom_pad
-        # smd = torch.sum(torch.abs(diff_h[:, :, 1:-1])) + torch.sum(torch.abs(diff_v[:, :, 1:-1]))
-        ssd = torch.sum(torch.pow(diff_h[:, :, 1:-1], 2)) + torch.sum(torch.pow(diff_v[:, :, 1:-1], 2))
-        ssd = ssd / batch_size
-        ssd_list.append(ssd)
-    
-    return np.array(ssd_list)
-
-
-def evaluate_ssdr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
-    ssd_pred, ssd_truth = evaluate_ssd(pred), evaluate_ssd(truth)
-    ssdr = ssd_pred / ssd_truth
-    return ssdr
-
-
-def evaluate_cc(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
-    assert pred.size() == truth.size()
-    pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(1)
-
-    cc_list = []
-    for s in range(seq_len):
-        cc = torch.corrcoef(torch.stack([pred[:, s].flatten(), truth[:, s].flatten()]))[0, 1]
-        cc_list.append(cc)
-
-    return np.array(cc_list)
-    
 
 def evaluate_me(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
@@ -130,17 +79,19 @@ def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     return np.array(mae_list)
 
 
-def evaluate_rmse(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
+def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(1)
 
-    rmse_list = []
+    kld_list = []
     for s in range(seq_len):
-        rmse = torch.sqrt(F.mse_loss(pred[:, s], truth[:, s]))
-        rmse_list.append(rmse)
-
-    return np.array(rmse_list)
+        pred_batch_flatten, truth_batch_flatten = pred[:, s].flatten(start_dim=1), truth[:, s].flatten(start_dim=1)
+        pred_batch_flatten, truth_batch_flatten = pred[:, s].softmax(dim=-1), truth[:, s].softmax(dim=-1)
+        kld = F.kl_div(pred_batch_flatten, truth_batch_flatten)
+        kld_list.append(kld)
+    
+    return np.array(kld_list)
 
 
 def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
@@ -156,33 +107,3 @@ def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
         ssim_list.append(ssim_)
 
     return np.array(ssim_list)
-
-
-def evaluate_psnr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
-    assert pred.size() == truth.size()
-    pred, truth = pred.cpu(), truth.cpu()
-    pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
-    pred, truth = pred.float(), truth.float()
-    seq_len = pred.size(1)
-
-    psnr_list = []
-    for s in range(seq_len):
-        mse = F.mse_loss(pred[:, s], truth[:, s])
-        psnr = 10 * torch.log10(torch.max(pred) ** 2 / mse)
-        psnr_list.append(psnr)
-
-    return np.array(psnr_list)
-
-
-def evaluate_cvr(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
-    assert pred.size() == truth.size()
-    pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(1)
-
-    cvr_list = []
-    for s in range(seq_len):
-        pred_cv = torch.std(pred[:, s]) / torch.mean(pred[:, s])
-        truth_cv = torch.std(truth[:, s]) / torch.mean(truth[:, s])
-        cvr_list.append(pred_cv / truth_cv)
-
-    return np.array(cvr_list)

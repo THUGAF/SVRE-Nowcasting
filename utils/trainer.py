@@ -1,13 +1,10 @@
 import os
 import math
-
 import numpy as np
 import pandas as pd
-
 import torch
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
-
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.scaler as scaler
@@ -17,7 +14,7 @@ import model.losses as losses
 # refers to https://github.com/Bjarten/early-stopping-pytorch
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=10, verbose=False, delta=0, path='checkpoint.pt'):
+    def __init__(self, patience=20, verbose=False, delta=0, path='checkpoint.pt'):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved. Default: 20
@@ -202,12 +199,10 @@ class NNTrainer:
             metrics['POD-%ddBZ' % threshold] = []
             metrics['FAR-%ddBZ' % threshold] = []
             metrics['CSI-%ddBZ' % threshold] = []
-        metrics['CC'] = []
         metrics['ME'] = []
         metrics['MAE'] = []
-        metrics['RMSE'] = []
         metrics['SSIM'] = []
-        metrics['PSNR'] = []
+        metrics['KLD'] = []
         test_loss = []
         
         print('\n[Test]')
@@ -235,16 +230,14 @@ class NNTrainer:
                 print('Batch: [{}][{}] Loss: {:.4f}'.format(i + 1, len(self.test_loader), loss.item()))
 
             for threshold in self.args.thresholds:
-                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-            metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
             metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
             metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-            metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
             metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-            metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
+            metrics['KLD'].append(evaluation.evaluate_kld(pred_rev, truth_rev))
         
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
         
@@ -287,16 +280,14 @@ class NNTrainer:
 
             print('\nEvaluating...')
             for threshold in self.args.thresholds:
-                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-            metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
             metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
             metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-            metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
             metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-            metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+            metrics['KLD'] = evaluation.evaluate_kld(pred_rev, truth_rev)
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
@@ -353,7 +344,7 @@ class GANTrainer:
                                 weight_decay=self.args.weight_decay)
         self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr / 2,
                                 betas=(self.args.beta1, self.args.beta2),
-                                weight_decay=self.args.weight_decay * 1e2)
+                                weight_decay=1)
         self.scheduler_g = StepLR(self.optimizer_g, step_size=2000, gamma=0.5)
         self.scheduler_d = StepLR(self.optimizer_d, step_size=2000, gamma=0.5)
 
@@ -519,12 +510,10 @@ class GANTrainer:
             metrics['POD-%ddBZ' % threshold] = []
             metrics['FAR-%ddBZ' % threshold] = []
             metrics['CSI-%ddBZ' % threshold] = []
-        metrics['CC'] = []
         metrics['ME'] = []
         metrics['MAE'] = []
-        metrics['RMSE'] = []
         metrics['SSIM'] = []
-        metrics['PSNR'] = []
+        metrics['KLD'] = []
         test_loss_g = []
         test_loss_d = []
         
@@ -563,16 +552,14 @@ class GANTrainer:
                     i + 1, len(self.test_loader), loss_g.item(), loss_d.item()))
 
             for threshold in self.args.thresholds:
-                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-            metrics['CC'].append(evaluation.evaluate_cc(pred_rev, truth_rev))
             metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
             metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-            metrics['RMSE'].append(evaluation.evaluate_rmse(pred_rev, truth_rev))
             metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-            metrics['PSNR'].append(evaluation.evaluate_psnr(pred, truth))
+            metrics['KLD'].append(evaluation.evaluate_kld(pred_rev, truth_rev))
                     
         print('Loss G: {:.4f} Loss D: {:.4f}'.format(np.mean(test_loss_g), np.mean(test_loss_d)))
 
@@ -617,16 +604,14 @@ class GANTrainer:
 
             print('\nEvaluating...')
             for threshold in self.args.thresholds:
-                pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-            metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
             metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
             metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-            metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
             metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-            metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+            metrics['KLD'] = evaluation.evaluate_kld(pred_rev, truth_rev)
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)

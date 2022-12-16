@@ -26,8 +26,8 @@ def biased_mae_loss(pred: torch.Tensor, truth: torch.Tensor, vmax: float, vmin: 
 
 
 def cv_loss(pred: torch.Tensor, truth: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
-    pred_cv = torch.std(pred, dim=(1, 2, 3, 4)) / (torch.mean(pred, dim=(1, 2, 3, 4)) + eps)
-    truth_cv = torch.std(truth, dim=(1, 2, 3, 4)) / (torch.mean(truth, dim=(1, 2, 3, 4)) + eps)
+    pred_cv = torch.std(pred, dim=(2, 3, 4)) / (torch.mean(pred, dim=(2, 3, 4)) + eps)
+    truth_cv = torch.std(truth, dim=(2, 3, 4)) / (torch.mean(truth, dim=(2, 3, 4)) + eps)
     return F.l1_loss(pred_cv, truth_cv)
 
 
