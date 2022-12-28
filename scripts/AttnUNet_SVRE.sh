@@ -11,7 +11,7 @@ nohup python -u train.py \
     --sample-indices 16840 17190 \
     --max-iterations 80000 \
     --early-stopping \
-    --lambda-var 5 \
+    --lambda-var 10 \
     --batch-size 16 \
     --num-threads 8 \
     --num-workers 8 \

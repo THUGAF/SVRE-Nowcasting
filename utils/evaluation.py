@@ -87,8 +87,8 @@ def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     kld_list = []
     for s in range(seq_len):
         pred_batch_flatten, truth_batch_flatten = pred[:, s].flatten(start_dim=1), truth[:, s].flatten(start_dim=1)
-        pred_batch_flatten, truth_batch_flatten = pred[:, s].softmax(dim=-1), truth[:, s].softmax(dim=-1)
-        kld = F.kl_div(pred_batch_flatten, truth_batch_flatten)
+        pred_batch_flatten, truth_batch_flatten = pred_batch_flatten.softmax(dim=-1), truth_batch_flatten.softmax(dim=-1)
+        kld = F.kl_div(pred_batch_flatten.log(), truth_batch_flatten, reduction='batchmean')
         kld_list.append(kld)
     
     return np.array(kld_list)

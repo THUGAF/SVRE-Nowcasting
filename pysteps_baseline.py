@@ -29,7 +29,7 @@ parser.add_argument('--input-steps', type=int, default=10)
 parser.add_argument('--forecast-steps', type=int, default=10)
 
 # evaluation settings
-parser.add_argument('--thresholds', type=int, nargs='+', default=[10, 20, 30, 40])
+parser.add_argument('--thresholds', type=int, nargs='+', default=[30, 40])
 parser.add_argument('--vmax', type=float, default=70.0)
 parser.add_argument('--vmin', type=float, default=-10.0)
 
@@ -79,16 +79,14 @@ def predict(args):
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
         for threshold in args.thresholds:
-            pod, far, csi, hss = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+            pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
             metrics['POD-{}dBZ'.format(str(threshold))] = pod
             metrics['FAR-{}dBZ'.format(str(threshold))] = far
             metrics['CSI-{}dBZ'.format(str(threshold))] = csi
-        metrics['CC'] = evaluation.evaluate_cc(pred_rev, truth_rev)
         metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
         metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-        metrics['RMSE'] = evaluation.evaluate_rmse(pred_rev, truth_rev)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-        metrics['PSNR'] = evaluation.evaluate_psnr(pred, truth)
+        metrics['KLD'] = evaluation.evaluate_kld(pred_rev, truth_rev)
         
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
