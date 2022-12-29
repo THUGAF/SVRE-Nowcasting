@@ -4,7 +4,6 @@ nohup python -u train.py \
     --output-path results/AttnUNet_GASVRE \
     --model AttnUNet \
     --add-gan \
-    --train \
     --test \
     --predict \
     --ensemble-members 3 \

@@ -11,7 +11,7 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
     fig = plt.figure(figsize=(10, 4), dpi=600)
 
     truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))
-    truth_30min, truth_60min = truth[4, 0, 0], truth[9, 0, 0]
+    truth_30min, truth_60min = truth[0, 4, 0], truth[0, 9, 0]
     ref_std_30min, ref_std_60min = torch.std(truth_30min), torch.std(truth_60min)
 
     taylor_diagram_30min = TaylorDiagram(ref_std_30min.numpy(), fig, rect=121, 
@@ -25,7 +25,7 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
 
     for i, path in enumerate(paths):
         pred = torch.load(os.path.join(root, path, 'pred', 'pred.pt'))
-        pred_30min, pred_60min = pred[4, 0, 0], pred[9, 0, 0]
+        pred_30min, pred_60min = pred[0, 4, 0], pred[0, 9, 0]
         stddev_30min, stddev_60min = torch.std(pred_30min), torch.std(pred_60min)
         corrcoef_30min = torch.corrcoef(torch.stack([truth_30min.flatten(), pred_30min.flatten()]))[0, 1]
         corrcoef_60min = torch.corrcoef(torch.stack([truth_60min.flatten(), pred_60min.flatten()]))[0, 1]
@@ -65,12 +65,12 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
 if __name__ == '__main__':
     colors = cm.get_cmap('tab10')
     plot_taylor_diagram('results', 
-                        ['AttnUNet/sample', 'AttnUNet_CV/sample', 'AttnUNet_GAN/sample', 'AttnUNet_GAN_CV/sample'], 
+                        ['AttnUNet/sample_0', 'AttnUNet_SVRE/sample_0', 'AttnUNet_GA/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'img/taylor_ablation.jpg', std_range=[7, 17], std_num=6, 
+                        'img/taylor_ablation_0.jpg', std_range=[9, 19], std_num=6, 
                         colors=colors.colors)
     plot_taylor_diagram('results',
-                        ['PySTEPS/sample', 'ConvLSTM/sample', 'SmaAt_UNet/sample', 'AttnUNet_GAN_CV/sample'], 
-                        ['PySTEPS', 'ConvLSTM-EF', 'SmaAt-UNet', 'AGAN+SVRE (ours)'],
-                        'img/taylor_comparison.jpg', std_range=[7, 17], std_num=6, 
+                        ['AttnUNet/sample_1', 'AttnUNet_SVRE/sample_1', 'AttnUNet_GA/sample_1', 'AttnUNet_GASVRE/sample_1'],
+                        ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
+                        'img/taylor_ablation_1.jpg', std_range=[9, 19], std_num=6,
                         colors=colors.colors)

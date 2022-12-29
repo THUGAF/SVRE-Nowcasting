@@ -3,7 +3,6 @@ nohup python -u train.py \
     --data-path /data/gaf/SBandCRPt \
     --output-path results/SmaAt_UNet \
     --model SmaAt_UNet \
-    --train \
     --test \
     --predict \
     --sample-indices 16840 17190 \
