@@ -14,7 +14,7 @@ import model.losses as losses
 # refers to https://github.com/Bjarten/early-stopping-pytorch
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=20, verbose=False, delta=0, path='checkpoint.pt'):
+    def __init__(self, patience=10, verbose=False, delta=0, path='checkpoint.pt'):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved. Default: 20
@@ -243,7 +243,8 @@ class NNTrainer:
         
         print('\nEvaluating...')
         for key in metrics.keys():
-            metrics[key] = np.mean(metrics[key], axis=0)
+            if key != 'Time':
+                metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
         print('Evaluation complete')
@@ -565,7 +566,8 @@ class GANTrainer:
 
         print('\nEvaluating...')
         for key in metrics.keys():
-            metrics[key] = np.mean(metrics[key], axis=0)
+            if key != 'Time':
+                metrics[key] = np.mean(metrics[key], axis=0)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(self.args.output_path, 'test_metrics.csv'), float_format='%.4g', index=False)
         print('Evaluation complete')

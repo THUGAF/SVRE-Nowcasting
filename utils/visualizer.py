@@ -27,12 +27,12 @@ LEFT_BOTTOM_LAT, LEFT_BOTTOM_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X - 1
 RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X + 128000, CENTER_UTM_Y + 192000)
 AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
 
-REF_CMAP = pcolors.ListedColormap([[255 / 255, 255 / 255, 255 / 255], [41 / 255, 237 / 255, 238 / 255], [29 / 255, 175 / 255, 243 / 255],
+CMAP = pcolors.ListedColormap([[255 / 255, 255 / 255, 255 / 255], [41 / 255, 237 / 255, 238 / 255], [29 / 255, 175 / 255, 243 / 255],
                                    [10 / 255, 35 / 255, 244 / 255], [41 / 255, 253 / 255, 47 / 255], [30 / 255, 199 / 255, 34 / 255],
                                    [19 / 255, 144 / 255, 22 / 255], [254 / 255, 253 / 255, 56 / 255], [230 / 255, 191 / 255, 43 / 255],
                                    [251 / 255, 144 / 255, 37 / 255], [249 / 255, 14 / 255, 28 / 255], [209 / 255, 11 / 255, 21 / 255],
                                    [189 / 255, 8 / 255, 19 / 255], [219 / 255, 102 / 255, 252 / 255], [186 / 255, 36 / 255, 235 / 255]])
-REF_NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), REF_CMAP.N)
+NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), CMAP.N)
 
 
 def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str = 'loss.png') -> None:
@@ -53,11 +53,11 @@ def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, time
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
     _plot_map_figs(input_, root, timestamp[:, :input_.size(1)], stage, type_='input', 
-                   cmap=REF_CMAP, norm=REF_NORM)
+                   cmap=CMAP, norm=NORM)
     _plot_map_figs(pred, root, timestamp[:, input_.size(1): input_.size(1) + pred.size(1)], 
-                   stage, type_='pred', cmap=REF_CMAP, norm=REF_NORM)
+                   stage, type_='pred', cmap=CMAP, norm=NORM)
     _plot_map_figs(truth, root, timestamp[:, input_.size(1): input_.size(1) + truth.size(1)], 
-                   stage, type_='truth', cmap=REF_CMAP, norm=REF_NORM)
+                   stage, type_='truth', cmap=CMAP, norm=NORM)
 
 
 def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type_: str, 
@@ -126,7 +126,7 @@ def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: 
     ax.yaxis.set_major_formatter(LatitudeFormatter())
     ax.tick_params(labelsize=18)
 
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=REF_CMAP, norm=REF_NORM), pad=0.05, shrink=0.7, aspect=20, 
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), pad=0.05, shrink=0.7, aspect=20, 
                         orientation='vertical', extend='both')
     cbar.set_label('dBZ', fontsize=18)
     cbar.ax.tick_params(labelsize=16)

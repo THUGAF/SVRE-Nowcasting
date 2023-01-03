@@ -6,7 +6,7 @@ nohup python -u train.py \
     --add-gan \
     --test \
     --predict \
-    --ensemble-members 3 \
+    --ensemble-members 4 \
     --train-ratio 0.7 \
     --valid-ratio 0.1 \
     --sample-indices 16840 17190 \
