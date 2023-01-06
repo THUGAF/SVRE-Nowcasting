@@ -1,5 +1,6 @@
 import os
 import numpy as np
+import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.colors as pcolors
@@ -35,19 +36,20 @@ plt.rcParams['font.sans-serif'] = 'Arial'
 
 def plot_maps(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
-    fig = plt.figure(figsize=(18, 12), dpi=600)
     input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
     input_ = np.flip(input_[0, 8, 0].numpy(), axis=0)
     truth = np.flip(truth[0, 8, 0].numpy(), axis=0)
+    
+    fig = plt.figure(figsize=(18, 12), dpi=600)
     for i in range(len(model_names) + 2):
         ax = fig.add_subplot(2, len(model_names) // 2 + 1, i + 1, projection=ccrs.Mercator())
         if i == 0:
             tensor = input_
-            title = 'observation (0 min)'
+            title = 'Observation (0 min)'
         elif i == 1:
             tensor = truth
-            title = 'observation (+60 min)'
+            title = 'Observation (+60 min)'
         else:
             pred = torch.load(os.path.join(model_dirs[i - 2], stage, 'pred', 'pred.pt'))
             tensor = np.flip(pred[0, 8, 0].numpy(), axis=0)
@@ -75,8 +77,52 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     print('{} saved'.format(img_path))
 
 
+def plot_psd(model_names, model_dirs, stage, img_path):
+    print('Plotting {} ...'.format(img_path))
+    psd_x_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_x.csv'.format(stage)))
+    psd_y_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_y.csv'.format(stage)))
+    wavelength_x, truth_psd_x = psd_x_df['wavelength_x'], psd_x_df['truth_psd_x']
+    wavelength_y, truth_psd_y = psd_y_df['wavelength_y'], psd_y_df['truth_psd_y']
+    
+    fig = plt.figure(figsize=(14, 6), dpi=600)
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax2 = fig.add_subplot(1, 2, 2)
+
+    ax1.plot(wavelength_x, truth_psd_x, color='k')
+    ax2.plot(wavelength_y, truth_psd_y, color='k')
+    
+    legend = ['Observation']
+    for i in range(len(model_names)):
+        psd_x_df = pd.read_csv(os.path.join(model_dirs[i], '{}_psd_x.csv'.format(stage)))
+        psd_y_df = pd.read_csv(os.path.join(model_dirs[i], '{}_psd_y.csv'.format(stage)))
+        pred_psd_x, pred_psd_y = psd_x_df['pred_psd_x'], psd_y_df['pred_psd_y']
+        ax1.plot(wavelength_x, pred_psd_x)
+        ax2.plot(wavelength_y, pred_psd_y)
+        legend.append(model_names[i])
+    
+    ax1.set_xscale('log', base=2)
+    ax1.set_yscale('log', base=10)
+    ax1.invert_xaxis()
+    ax1.set_xlabel('Wave Length (km)', fontsize=12)
+    ax1.set_ylabel('Power spectral density of X axis', fontsize=12)
+    ax1.legend(legend)
+
+    ax2.set_xscale('log', base=2)
+    ax2.set_yscale('log', base=10)
+    ax2.invert_xaxis()
+    ax2.set_xlabel('Wave Length (km)', fontsize=12)
+    ax2.set_ylabel('Power spectral density of Y axis', fontsize=12)
+    ax2.legend(legend)
+
+    fig.savefig(img_path, bbox_inches='tight')
+    plt.close(fig)
+    print('{} saved'.format(img_path))
+
+
 if __name__ == '__main__':
     model_names = ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE']
     model_dirs = ['results/AttnUNet', 'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE']
-    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_ablation_sample_0.png')
-    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_ablation_sample_1.png')
+    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_ablation_sample_0.jpg')
+    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_ablation_sample_1.jpg')
+    plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0.jpg')
+    plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1.jpg')

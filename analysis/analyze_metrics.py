@@ -32,6 +32,6 @@ if __name__ == '__main__':
     sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
     sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
     with pd.ExcelWriter('results/metrics.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='model')
-        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model')
-        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model')
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.3g')
+        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.3g')
+        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.3g')
