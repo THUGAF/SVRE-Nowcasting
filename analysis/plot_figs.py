@@ -38,8 +38,8 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
     input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
-    input_ = np.flip(input_[0, 8, 0].numpy(), axis=0)
-    truth = np.flip(truth[0, 8, 0].numpy(), axis=0)
+    input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
+    truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
     fig = plt.figure(figsize=(18, 12), dpi=600)
     for i in range(len(model_names) + 2):
@@ -52,7 +52,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
             title = 'Observation (+60 min)'
         else:
             pred = torch.load(os.path.join(model_dirs[i - 2], stage, 'pred', 'pred.pt'))
-            tensor = np.flip(pred[0, 8, 0].numpy(), axis=0)
+            tensor = np.flip(pred[0, -1, 0].numpy(), axis=0)
             title = model_names[i - 2]
         ax.set_extent(AREA, crs=ccrs.PlateCarree())
         ax.coastlines()
@@ -73,20 +73,21 @@ def plot_maps(model_names, model_dirs, stage, img_path):
         ax.set_title(title, fontsize=18)
 
     fig.savefig(img_path, bbox_inches='tight')
-    plt.close(fig)
     print('{} saved'.format(img_path))
 
 
-def plot_psd(model_names, model_dirs, stage, img_path):
-    print('Plotting {} ...'.format(img_path))
+def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
+    print('Plotting {} ...'.format(img_path_1))
+    print('Plotting {} ...'.format(img_path_2))
     psd_x_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_x.csv'.format(stage)))
     psd_y_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_y.csv'.format(stage)))
     wavelength_x, truth_psd_x = psd_x_df['wavelength_x'], psd_x_df['truth_psd_x']
     wavelength_y, truth_psd_y = psd_y_df['wavelength_y'], psd_y_df['truth_psd_y']
     
-    fig = plt.figure(figsize=(14, 6), dpi=600)
-    ax1 = fig.add_subplot(1, 2, 1)
-    ax2 = fig.add_subplot(1, 2, 2)
+    fig1 = plt.figure(figsize=(8, 6), dpi=600)
+    fig2 = plt.figure(figsize=(8, 6), dpi=600)
+    ax1 = fig1.add_subplot(1, 1, 1)
+    ax2 = fig2.add_subplot(1, 1, 1)
 
     ax1.plot(wavelength_x, truth_psd_x, color='k')
     ax2.plot(wavelength_y, truth_psd_y, color='k')
@@ -114,9 +115,10 @@ def plot_psd(model_names, model_dirs, stage, img_path):
     ax2.set_ylabel('Power spectral density of Y axis', fontsize=12)
     ax2.legend(legend)
 
-    fig.savefig(img_path, bbox_inches='tight')
-    plt.close(fig)
-    print('{} saved'.format(img_path))
+    fig1.savefig(img_path_1, bbox_inches='tight')
+    fig2.savefig(img_path_2, bbox_inches='tight')
+    print('{} saved'.format(img_path_1))
+    print('{} saved'.format(img_path_2))
 
 
 if __name__ == '__main__':
@@ -124,5 +126,5 @@ if __name__ == '__main__':
     model_dirs = ['results/AttnUNet', 'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE']
     plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_ablation_sample_0.jpg')
     plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_ablation_sample_1.jpg')
-    plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0.jpg')
-    plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1.jpg')
+    # plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0_x.jpg', 'img/psd_ablation_sample_0_y.jpg')
+    # plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1_x.jpg', 'img/psd_ablation_sample_1_y.jpg')

@@ -9,15 +9,15 @@ This repo contains a PyTorch implementation of the **Spatial Variability Represe
 ## Architecture of AGAN
 
 Generator
-![Generator](img/Generator.png)
+![Generator](img/Generator.jpg)
 
 Discriminator
-![Discriminator](img/Discriminator_v2.png)
+![Discriminator](img/Discriminator_v2.jpg)
 
 Scaling blocks
 
-![DownBlock](img/DownBlock.png)
-![UpBlock](img/UpBlock.png)
+![DownBlock](img/DownBlock.jpg)
+![UpBlock](img/UpBlock.jpg)
 
 ## Performance overview
 
