@@ -12,20 +12,14 @@ Generator
 ![Generator](img/Generator.png)
 
 Discriminator
-![Discriminator](img/Discriminator.png)
+![Discriminator](img/Discriminator_v2.png)
 
 Scaling blocks
 
-![D-ScalingBlock](img/D-ScalingBlock.png)
-![G-ScalingBlock](img/G-ScalingBlock.png)
+![DownBlock](img/DownBlock.png)
+![UpBlock](img/UpBlock.png)
 
 ## Performance overview
-
-Ablation study
-![Ablation](img/ablation_vis.jpg)
-
-Comparison study
-![Comparsion](img/comparison_vis.jpg)  
 
 ## Dependencies
 
@@ -45,18 +39,18 @@ pysteps=1.4.1
 
 Run the bash scripts to train the model with the radar dataset.
 
-Ablation study
+Ablation experiment
 
-```cd scripts
+```cd
 sh AttnUNet.sh
 sh AttnUNet_SVRE.sh
 sh AttnUNet_GA.sh
 sh AttnUNet_GASVRE.sh
 ```
 
-Comparison study
+Comparison experiment
 
-```cd scripts
+```cd
 sh PySTEPS.sh
 sh ConvLSTM.sh
 sh SmaAt_UNet.sh
