@@ -41,9 +41,10 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
     truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
-    fig = plt.figure(figsize=((len(model_names) + 2) * 6, 6), dpi=600)
-    for i in range(len(model_names) + 2):
-        ax = fig.add_subplot(1, len(model_names) + 2, i + 1, projection=ccrs.Mercator())
+    num_subplot = len(model_names) + 2
+    fig = plt.figure(figsize=(12, num_subplot // 2 * 6), dpi=600)
+    for i in range(num_subplot):
+        ax = fig.add_subplot(num_subplot // 2, 2, i + 1, projection=ccrs.Mercator())
         if i == 0:
             tensor = input_
             title = 'Observation (0 min)'
@@ -72,9 +73,9 @@ def plot_maps(model_names, model_dirs, stage, img_path):
         ax.tick_params(labelsize=20)
         ax.set_title(title, fontsize=24)
     
-    fig.subplots_adjust(right=0.95)
-    cax = fig.add_axes([0.96, 0.15, 0.005, 0.7])
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical', extend='both')
+    fig.subplots_adjust(right=0.88)
+    cax = fig.add_axes([0.90, 0.15, 0.03, 0.7])
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
     cbar.set_label('dBZ', fontsize=20)
     cbar.ax.tick_params(labelsize=18)
 
@@ -132,5 +133,5 @@ if __name__ == '__main__':
     model_dirs = ['results/AttnUNet', 'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE']
     plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_ablation_sample_0.jpg')
     plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_ablation_sample_1.jpg')
-    plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0_x.jpg', 'img/psd_ablation_sample_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1_x.jpg', 'img/psd_ablation_sample_1_y.jpg')
+    # plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0_x.jpg', 'img/psd_ablation_sample_0_y.jpg')
+    # plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1_x.jpg', 'img/psd_ablation_sample_1_y.jpg')
