@@ -1,4 +1,5 @@
 import os
+import sys
 import math
 import numpy as np
 import pandas as pd
@@ -9,6 +10,16 @@ import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.scaler as scaler
 import model.losses as losses
+
+
+class HiddenPrints:
+    def __enter__(self):
+        self._original_stdout = sys.stdout
+        sys.stdout = open(os.devnull, 'w')
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        sys.stdout.close()
+        sys.stdout = self._original_stdout
 
 
 # refers to https://github.com/Bjarten/early-stopping-pytorch
@@ -120,22 +131,17 @@ class NNTrainer:
                 timestamp = timestamp.to(self.args.device)
                 input_ = tensor[:, :self.args.input_steps]
                 truth = tensor[:, self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                pred = self.model(input_)
+                input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+                truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+                pred_norm = self.model(input_norm)
 
                 # Backward propagation
-                loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                    + self.args.lambda_var * losses.cv_loss(pred, truth)
+                loss = self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin) \
+                    + self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm)
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
                 self.scheduler.step()
-
-                input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
-
                 train_loss.append(loss.item())
                 if (i + 1) % self.args.display_interval == 0:
                     print('Epoch: [{}][{}] Batch: [{}][{}] Loss: {:.4f}'.format(
@@ -147,6 +153,7 @@ class NNTrainer:
             np.savetxt(os.path.join(self.args.output_path, 'train_loss.txt'), self.train_loss)
 
             print('\nVisualizing...')
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
             print('Visualization complete')
 
@@ -159,16 +166,11 @@ class NNTrainer:
                     timestamp = timestamp.to(self.args.device)
                     input_ = tensor[:, :self.args.input_steps]
                     truth = tensor[:, self.args.input_steps:]
-                    input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                    truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                    pred = self.model(input_)
-                    loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                        + self.args.lambda_var * losses.cv_loss(pred, truth)
-                    
-                    input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                    pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                    truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
-
+                    input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+                    truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+                    pred_norm = self.model(input_norm)
+                    loss = self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin) \
+                        + self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm)
                     val_loss.append(loss.item())
                     if (i + 1) % self.args.display_interval == 0:
                         print('Epoch: [{}][{}] Batch: [{}][{}] Loss: {:.4f}'.format(
@@ -180,6 +182,7 @@ class NNTrainer:
             np.savetxt(os.path.join(self.args.output_path, 'val_loss.txt'), self.val_loss)
 
             print('\nVisualizing...')
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
             visualizer.plot_loss(self.train_loss, self.val_loss, self.args.output_path)
             print('Visualization complete')
@@ -215,29 +218,25 @@ class NNTrainer:
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
             truth = tensor[:, self.args.input_steps:]
-            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-            pred = self.model(input_)
-            loss = self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin) \
-                + self.args.lambda_var * losses.cv_loss(pred, truth)
-
-            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
-
+            input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            pred_norm = self.model(input_norm)
+            loss = self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin) \
+                + self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm)
             test_loss.append(loss.item())
             if (i + 1) % self.args.display_interval == 0:
                 print('Batch: [{}][{}] Loss: {:.4f}'.format(i + 1, len(self.test_loader), loss.item()))
 
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             for threshold in self.args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-            metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
-            metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-            metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-            metrics['KLD'].append(evaluation.evaluate_kld(pred_rev, truth_rev))
+            metrics['ME'].append(evaluation.evaluate_me(pred, truth))
+            metrics['MAE'].append(evaluation.evaluate_mae(pred, truth))
+            metrics['SSIM'].append(evaluation.evaluate_ssim(pred_norm, truth_norm))
+            metrics['KLD'].append(evaluation.evaluate_kld(pred, truth))
         
         print('Loss: {:.4f}'.format(np.mean(test_loss)))
         
@@ -250,7 +249,7 @@ class NNTrainer:
         print('Evaluation complete')
         
         print('\nVisualizing...')
-        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'test')
         print('Visualization complete')
 
         print('\nTest complete')
@@ -272,31 +271,29 @@ class NNTrainer:
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
             truth = tensor[:, self.args.input_steps:]
-            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-            pred = self.model(input_)
-            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+            input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            pred_norm = self.model(input_norm)
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
 
             print('\nEvaluating...')
             for threshold in self.args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-            metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
-            metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-            metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-            metrics['KLD'] = evaluation.evaluate_kld(pred_rev, truth_rev)
+            metrics['ME'] = evaluation.evaluate_me(pred, truth)
+            metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
+            metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
+            metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
             print('Evaluation complete')
 
             print('\nVisualizing...')
-            visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
-            visualizer.plot_psd(pred_rev, truth_rev, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_psd(pred, truth, self.args.output_path, 'sample_{}'.format(i))
             print('Visualization complete')
         
         print('\nPrediction complete')
@@ -399,11 +396,11 @@ class GANTrainer:
                 timestamp = timestamp.to(self.args.device)
                 input_ = tensor[:, :self.args.input_steps]
                 truth = tensor[:, self.args.input_steps:]
-                input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-                preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+                input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+                truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+                preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]
                 real_score = self.model.discriminator(tensor)
-                fake_scores = [self.model.discriminator(torch.cat([input_, pred.detach()], dim=1)) for pred in preds]
+                fake_scores = [self.model.discriminator(torch.cat([input_norm, pred_norm.detach()], dim=1)) for pred_norm in preds_norm]
                 
                 # Backward propagation
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
@@ -413,20 +410,16 @@ class GANTrainer:
                 self.optimizer_d.step()
                 self.scheduler_d.step()
 
-                fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
+                fake_scores = [self.model.discriminator(torch.cat([input_norm, pred_norm], dim=1)) for pred_norm in preds_norm]
                 fake_score = torch.mean(torch.stack(fake_scores), dim=0)
-                pred = torch.mean(torch.stack(preds), dim=0)
+                pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
                 loss_g = losses.cal_g_loss(fake_score) + \
-                    self.args.lambda_var * losses.cv_loss(pred, truth) + \
-                    self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)  
+                    self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm) + \
+                    self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin)  
                 self.optimizer_g.zero_grad()
                 loss_g.backward()
                 self.optimizer_g.step()
                 self.scheduler_g.step()
-   
-                input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
 
                 train_loss_g.append(loss_g.item())
                 train_loss_d.append(loss_d.item())
@@ -444,6 +437,7 @@ class GANTrainer:
             np.savetxt(os.path.join(self.args.output_path, 'train_loss_d.txt'), self.train_loss_d)
 
             print('\nVisualizing...')
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'train')
             print('Visualization complete')
            
@@ -456,23 +450,19 @@ class GANTrainer:
                     timestamp = timestamp.to(self.args.device)
                     input_ = tensor[:, :self.args.input_steps]
                     truth = tensor[:, self.args.input_steps:]
-                    input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-                    truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+                    input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+                    truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
-                    preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+                    preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]
                     real_score = self.model.discriminator(tensor)
-                    fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
+                    fake_scores = [self.model.discriminator(torch.cat([input_norm, pred_norm], dim=1)) for pred_norm in preds_norm]
                     fake_score = torch.mean(torch.stack(fake_scores), dim=0)
                     loss_d = losses.cal_d_loss(fake_score, real_score)
 
-                    pred = torch.mean(torch.stack(preds), dim=0)
+                    pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
                     loss_g = losses.cal_g_loss(fake_score) + \
-                        self.args.lambda_var * losses.cv_loss(pred, truth) + \
-                        self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)
-
-                    input_ = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-                    pred = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-                    truth = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+                        self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm) + \
+                        self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin)
 
                     val_loss_g.append(loss_g.item())
                     val_loss_d.append(loss_d.item())
@@ -482,7 +472,7 @@ class GANTrainer:
                         ))
                             
             self.val_loss_g.append(np.mean(val_loss_g))
-            self.val_loss_d.append(np.mean(val_loss_d))    
+            self.val_loss_d.append(np.mean(val_loss_d))
             print('Epoch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
                 epoch + 1, self.total_epochs, self.val_loss_g[-1], self.val_loss_d[-1]))
 
@@ -490,6 +480,7 @@ class GANTrainer:
             np.savetxt(os.path.join(self.args.output_path, 'val_loss_d.txt'), self.val_loss_d)
 
             print('\nVisualizing...')
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'val')
             visualizer.plot_loss(self.train_loss_g, self.val_loss_g, self.args.output_path, 'loss_g.png')
             visualizer.plot_loss(self.train_loss_d, self.val_loss_d, self.args.output_path, 'loss_d.png')
@@ -528,39 +519,36 @@ class GANTrainer:
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
             truth = tensor[:, self.args.input_steps:]
-            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
-            preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
+            preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]
             real_score = self.model.discriminator(tensor)
-            fake_scores = [self.model.discriminator(torch.cat([input_, pred], dim=1)) for pred in preds]
+            fake_scores = [self.model.discriminator(torch.cat([input_norm, pred_norm], dim=1)) for pred_norm in preds_norm]
             fake_score = torch.mean(torch.stack(fake_scores), dim=0)
             loss_d = losses.cal_d_loss(fake_score, real_score)
             
-            pred = torch.mean(torch.stack(preds), dim=0)
+            pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
             loss_g = losses.cal_g_loss(fake_score) + \
-                self.args.lambda_var * losses.cv_loss(pred, truth) + \
-                self.args.lambda_rec * losses.biased_mae_loss(pred, truth, self.args.vmax, self.args.vmin)
-
-            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+                self.args.lambda_var * losses.cv_loss(pred_norm, truth_norm) + \
+                self.args.lambda_rec * losses.biased_mae_loss(pred_norm, truth_norm, self.args.vmax, self.args.vmin)
 
             test_loss_g.append(loss_g.item())
             test_loss_d.append(loss_d.item())
             if (i + 1) % self.args.display_interval == 0:
                 print('Batch: [{}][{}] Loss G: {:.4f} Loss D: {:.4f}'.format(
                     i + 1, len(self.test_loader), loss_g.item(), loss_d.item()))
-
+            
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
             for threshold in self.args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
                 metrics['POD-%ddBZ' % threshold].append(pod)
                 metrics['FAR-%ddBZ' % threshold].append(far)
                 metrics['CSI-%ddBZ' % threshold].append(csi)
-            metrics['ME'].append(evaluation.evaluate_me(pred_rev, truth_rev))
-            metrics['MAE'].append(evaluation.evaluate_mae(pred_rev, truth_rev))
-            metrics['SSIM'].append(evaluation.evaluate_ssim(pred, truth))
-            metrics['KLD'].append(evaluation.evaluate_kld(pred_rev, truth_rev))
+            metrics['ME'].append(evaluation.evaluate_me(pred, truth))
+            metrics['MAE'].append(evaluation.evaluate_mae(pred, truth))
+            metrics['SSIM'].append(evaluation.evaluate_ssim(pred_norm, truth_norm))
+            metrics['KLD'].append(evaluation.evaluate_kld(pred, truth))
                     
         print('Loss G: {:.4f} Loss D: {:.4f}'.format(np.mean(test_loss_g), np.mean(test_loss_d)))
 
@@ -573,7 +561,7 @@ class GANTrainer:
         print('Evaluation complete')
 
         print('\nVisualizing...')
-        visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'test')
+        visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'test')
         print('Visualization complete')
 
         print('\nTest complete')
@@ -595,33 +583,30 @@ class GANTrainer:
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
             truth = tensor[:, self.args.input_steps:]
-            input_ = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
-            truth = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
-            
-            preds = [self.model(input_) for _ in range(self.args.ensemble_members)]
-            pred = torch.mean(torch.stack(preds), dim=0)
-            input_rev = scaler.reverse_minmax_norm(input_, self.args.vmax, self.args.vmin)
-            pred_rev = scaler.reverse_minmax_norm(pred, self.args.vmax, self.args.vmin)
-            truth_rev = scaler.reverse_minmax_norm(truth, self.args.vmax, self.args.vmin)
+            input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
+            truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
+            preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]
+            pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
+            pred = scaler.reverse_minmax_norm(pred_norm, self.args.vmax, self.args.vmin)
 
             print('\nEvaluating...')
             for threshold in self.args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred_rev, truth_rev, threshold)
+                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
                 metrics['POD-%ddBZ' % threshold] = pod
                 metrics['FAR-%ddBZ' % threshold] = far
                 metrics['CSI-%ddBZ' % threshold] = csi
-            metrics['ME'] = evaluation.evaluate_me(pred_rev, truth_rev)
-            metrics['MAE'] = evaluation.evaluate_mae(pred_rev, truth_rev)
-            metrics['SSIM'] = evaluation.evaluate_ssim(pred, truth)
-            metrics['KLD'] = evaluation.evaluate_kld(pred_rev, truth_rev)
+            metrics['ME'] = evaluation.evaluate_me(pred, truth)
+            metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
+            metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
+            metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
                     
             df = pd.DataFrame(data=metrics)
             df.to_csv(os.path.join(self.args.output_path, 'sample_{}_metrics.csv'.format(i)), float_format='%.4g', index=False)
             print('Evaluation complete')
 
             print('\nVisualizing...')
-            visualizer.plot_map(input_rev, pred_rev, truth_rev, timestamp, self.args.output_path, 'sample_{}'.format(i))
-            visualizer.plot_psd(pred_rev, truth_rev, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'sample_{}'.format(i))
+            visualizer.plot_psd(pred, truth, self.args.output_path, 'sample_{}'.format(i))
             print('Visualization complete')
         
         print('\nPrediction complete')
