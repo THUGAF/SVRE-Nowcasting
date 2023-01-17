@@ -39,8 +39,6 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
                                    numpoints=1, fontsize=8, bbox_to_anchor=(1.2, 1.1))
     
     # Add title
-    # fig.axes[0].set_title('(a)\n', loc='left')
-    # fig.axes[1].set_title('(b)\n', loc='left')
     fig.tight_layout()
     fig.savefig(target_path)
 
@@ -50,10 +48,16 @@ if __name__ == '__main__':
     plot_taylor_diagram('results', 
                         ['AttnUNet/sample_0', 'AttnUNet_SVRE/sample_0', 'AttnUNet_GA/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'img/taylor_ablation_sample_0.jpg', std_range=[9, 19], std_num=6, 
-                        colors=colors.colors)
+                        'img/taylor_ablation_sample_0.jpg', std_range=[9, 19], std_num=6, colors=colors.colors)
     plot_taylor_diagram('results',
                         ['AttnUNet/sample_1', 'AttnUNet_SVRE/sample_1', 'AttnUNet_GA/sample_1', 'AttnUNet_GASVRE/sample_1'],
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                        'img/taylor_ablation_sample_1.jpg', std_range=[9, 19], std_num=6,
-                        colors=colors.colors)
+                        'img/taylor_ablation_sample_1.jpg', std_range=[9, 19], std_num=6, colors=colors.colors)
+    plot_taylor_diagram('results', 
+                        ['PySTEPS/sample_0', 'SmaAt_UNet/sample_0', 'MotionRNN/sample_0', 'AttnUNet_GASVRE/sample_0'], 
+                        ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
+                        'img/taylor_comparison_sample_0.jpg', std_range=[9, 23], std_num=8, colors=colors.colors)
+    plot_taylor_diagram('results',
+                        ['PySTEPS/sample_1', 'SmaAt_UNet/sample_1', 'MotionRNN/sample_1', 'AttnUNet_GASVRE/sample_1'],
+                        ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
+                        'img/taylor_comparison_sample_1.jpg', std_range=[9, 23], std_num=8, colors=colors.colors)
