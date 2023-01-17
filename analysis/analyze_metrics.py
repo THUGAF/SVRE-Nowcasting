@@ -31,13 +31,13 @@ def analyze_ablation_metrics():
     sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
     sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
     with pd.ExcelWriter('results/metrics_ablation.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.3g')
-        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.3g')
-        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.3g')
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
+        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.4g')
+        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.4g')
 
 
 def analyze_comparison_metrics():
-    model_names = ['PySTEPS', 'SmaAt_UNet', 'MotionRNN', 'AGAN+SVRE']
+    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE']
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE']
     test_metrics, sample_0_metrics, sample_1_metrics = {}, {}, {}
     for name, dir_ in zip(model_names, model_dirs):
@@ -46,9 +46,9 @@ def analyze_comparison_metrics():
     sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
     sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
     with pd.ExcelWriter('results/metrics_comparison.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.3g')
-        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.3g')
-        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.3g')
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
+        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.4g')
+        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.4g')
 
 
 if __name__ == '__main__':
