@@ -130,7 +130,7 @@ class NNTrainer:
                 tensor = tensor.to(self.args.device)
                 timestamp = timestamp.to(self.args.device)
                 input_ = tensor[:, :self.args.input_steps]
-                truth = tensor[:, self.args.input_steps:]
+                truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
                 input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                 pred_norm = self.model(input_norm)
@@ -165,7 +165,7 @@ class NNTrainer:
                     tensor = tensor.to(self.args.device)
                     timestamp = timestamp.to(self.args.device)
                     input_ = tensor[:, :self.args.input_steps]
-                    truth = tensor[:, self.args.input_steps:]
+                    truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
                     input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     pred_norm = self.model(input_norm)
@@ -217,7 +217,7 @@ class NNTrainer:
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
-            truth = tensor[:, self.args.input_steps:]
+            truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
             input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             pred_norm = self.model(input_norm)
@@ -270,7 +270,7 @@ class NNTrainer:
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
-            truth = tensor[:, self.args.input_steps:]
+            truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
             input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             pred_norm = self.model(input_norm)
@@ -395,7 +395,7 @@ class GANTrainer:
                 tensor = tensor.to(self.args.device)
                 timestamp = timestamp.to(self.args.device)
                 input_ = tensor[:, :self.args.input_steps]
-                truth = tensor[:, self.args.input_steps:]
+                truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
                 input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                 truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                 preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]
@@ -449,7 +449,7 @@ class GANTrainer:
                     tensor = tensor.to(self.args.device)
                     timestamp = timestamp.to(self.args.device)
                     input_ = tensor[:, :self.args.input_steps]
-                    truth = tensor[:, self.args.input_steps:]
+                    truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
                     input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
                     truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
                     
@@ -518,7 +518,7 @@ class GANTrainer:
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
-            truth = tensor[:, self.args.input_steps:]
+            truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
             input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
 
@@ -582,7 +582,7 @@ class GANTrainer:
             tensor = tensor.to(self.args.device)
             timestamp = timestamp.to(self.args.device)
             input_ = tensor[:, :self.args.input_steps]
-            truth = tensor[:, self.args.input_steps:]
+            truth = tensor[:, self.args.input_steps: self.args.input_steps + self.args.forecast_steps]
             input_norm = scaler.minmax_norm(input_, self.args.vmax, self.args.vmin)
             truth_norm = scaler.minmax_norm(truth, self.args.vmax, self.args.vmin)
             preds_norm = [self.model(input_norm) for _ in range(self.args.ensemble_members)]

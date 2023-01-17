@@ -22,7 +22,7 @@ def concat_model_metrics(metrics, idx):
     return metrics_60min
 
 
-if __name__ == '__main__':
+def analyze_ablation_metrics():
     model_names = ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE']
     model_dirs = ['results/AttnUNet', 'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE']
     test_metrics, sample_0_metrics, sample_1_metrics = {}, {}, {}
@@ -31,7 +31,27 @@ if __name__ == '__main__':
     test_metrics = concat_model_metrics(test_metrics, 8)
     sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
     sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
-    with pd.ExcelWriter('results/metrics.xlsx') as writer:
+    with pd.ExcelWriter('results/metrics_ablation.xlsx') as writer:
         test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.3g')
         sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.3g')
         sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.3g')
+
+
+def analyze_comparison_metrics():
+    model_names = ['PySTEPS', 'SmaAt_UNet', 'MotionRNN', 'AGAN+SVRE']
+    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE']
+    test_metrics, sample_0_metrics, sample_1_metrics = {}, {}, {}
+    for name, dir_ in zip(model_names, model_dirs):
+        test_metrics[name], sample_0_metrics[name], sample_1_metrics[name] = get_model_metrics(dir_)
+    test_metrics = concat_model_metrics(test_metrics, 8)
+    sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
+    sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
+    with pd.ExcelWriter('results/metrics_comparison.xlsx') as writer:
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.3g')
+        sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='model', float_format='%.3g')
+        sample_1_metrics.to_excel(writer, sheet_name='sample_1', index_label='model', float_format='%.3g')
+
+
+if __name__ == '__main__':
+    analyze_ablation_metrics()
+    analyze_comparison_metrics()
