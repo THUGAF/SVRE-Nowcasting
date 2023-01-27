@@ -95,7 +95,7 @@ def plot_maps_all(model_names, model_dirs, stage, img_path):
     for i in range(num_subplot):
         ax = fig.add_subplot(2, num_subplot // 2, i + 1, projection=ccrs.Mercator())
         if i == 0:
-            tensor = input_
+            tensor = truth
             title = 'Observation (+60 min)'
         else:
             pred = torch.load(os.path.join(model_dirs[i - 1], stage, 'pred', 'pred.pt'))
