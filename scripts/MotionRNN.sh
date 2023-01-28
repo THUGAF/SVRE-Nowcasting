@@ -3,7 +3,6 @@ nohup python -u train.py \
     --data-path /data/gaf/SBandCRPt \
     --output-path results/MotionRNN \
     --model MotionRNN \
-    --train \
     --test \
     --predict \
     --train-ratio 0.7 \

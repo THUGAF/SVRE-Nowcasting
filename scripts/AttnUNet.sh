@@ -3,7 +3,6 @@ nohup python -u train.py \
     --data-path /data/gaf/SBandCRPt \
     --output-path results/AttnUNet \
     --model AttnUNet \
-    --test \
     --predict \
     --train-ratio 0.7 \
     --valid-ratio 0.1 \

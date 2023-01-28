@@ -4,7 +4,6 @@ nohup python -u train.py \
     --output-path results/AttnUNet_GA \
     --model AttnUNet \
     --add-gan \
-    --test \
     --predict \
     --ensemble-members 4 \
     --train-ratio 0.7 \

@@ -174,16 +174,12 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     print('{} saved'.format(img_path_2))
 
 
-def plot_ablation(model_names, model_dirs):
-    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_ablation_sample_0.jpg')
-    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_ablation_sample_1.jpg')
+def plot_psd_ablation(model_names, model_dirs):
     plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0_x.jpg', 'img/psd_ablation_sample_0_y.jpg')
     plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1_x.jpg', 'img/psd_ablation_sample_1_y.jpg')
 
 
-def plot_comparison(model_names, model_dirs):
-    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_comparison_sample_0.jpg')
-    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_comparison_sample_1.jpg')
+def plot_psd_comparison(model_names, model_dirs):
     plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_comparison_sample_0_x.jpg', 'img/psd_comparison_sample_0_y.jpg')
     plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_comparison_sample_1_x.jpg', 'img/psd_comparison_sample_1_y.jpg')
 
@@ -194,9 +190,9 @@ def plot_all(model_names, model_dirs):
 
 
 if __name__ == '__main__':
-    plot_ablation(['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], ['results/AttnUNet',
+    plot_psd_ablation(['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], ['results/AttnUNet',
                   'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
-    plot_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
+    plot_psd_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
                     'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
     plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
              ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
