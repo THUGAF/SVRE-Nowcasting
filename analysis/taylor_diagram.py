@@ -53,11 +53,11 @@ class TaylorDiagram(object):
 
         # ------std axis extent (in units of reference stddev)
         if std_min is None or std_max is None:
-            self.std_min = self.std_ref * std_range[0] / self.std_ratio
-            self.std_max = self.std_ref * std_range[1] / self.std_ratio
+            self.std_min = self.std_ref * std_range[0]
+            self.std_max = self.std_ref * std_range[1]
         else:
-            self.std_min = std_min / self.std_ratio
-            self.std_max = std_max / self.std_ratio
+            self.std_min = std_min
+            self.std_max = std_max
 
         std_locs = np.linspace(self.std_min, self.std_max, num_std)
         std_labels = ['{0}'.format(std_label_format) % v for v in std_locs]
