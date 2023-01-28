@@ -107,7 +107,7 @@ class TaylorDiagram(object):
         l, = self.ax.plot([0], self.std_ref, 'r*', ls='', ms=5, label=label)
         theta = np.linspace(0, self.theta_max)
         r = np.zeros_like(theta) + self.std_ref
-        self.ax.plot(theta, r, 'k--', label='_')
+        # self.ax.plot(theta, r, 'k--', label='_')
 
         # ------collect sample points for latter use (e.g. legend)
         self.samplePoints = [l]

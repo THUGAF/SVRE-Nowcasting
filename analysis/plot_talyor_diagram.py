@@ -21,9 +21,9 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
         pred = torch.load(os.path.join(root, path, 'pred', 'pred.pt'))
         pred_60min = pred[0, 8, 0]
         stddev_60min = torch.std(pred_60min).numpy()
+        corrcoef_60min = torch.corrcoef(torch.stack([truth_60min.flatten(), pred_60min.flatten()]))[0, 1].numpy()
         # if i == 3:
         #     stddev_60min *= 1.2
-        corrcoef_60min = torch.corrcoef(torch.stack([truth_60min.flatten(), pred_60min.flatten()]))[0, 1].numpy()
         taylor_diagram_60min.add_sample(stddev_60min / ref_std_60min, corrcoef_60min, 
                                         ms=5, ls='', marker=markers[i],
                                         mfc=colors[i], mec=colors[i], label=models[i])
@@ -32,7 +32,7 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
     taylor_diagram_60min.add_grid()
 
     # Add RMS contours, and label them
-    contours_60 = taylor_diagram_60min.add_contours(colors='0.5')
+    contours_60 = taylor_diagram_60min.add_contours(colors='grey')
     plt.clabel(contours_60, inline=1, fontsize='medium', fmt='%.2f')
     
     # Add a figure legend
@@ -50,16 +50,16 @@ if __name__ == '__main__':
     plot_taylor_diagram('results', 
                         ['AttnUNet/sample_0', 'AttnUNet_SVRE/sample_0', 'AttnUNet_GA/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'img/taylor_ablation_sample_0.jpg', std_range=[0.6, 1.6], std_num=6, colors=colors.colors)
+                        'img/taylor_ablation_sample_0.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
     plot_taylor_diagram('results',
                         ['AttnUNet/sample_1', 'AttnUNet_SVRE/sample_1', 'AttnUNet_GA/sample_1', 'AttnUNet_GASVRE/sample_1'],
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                        'img/taylor_ablation_sample_1.jpg', std_range=[0.6, 1.6], std_num=6, colors=colors.colors)
+                        'img/taylor_ablation_sample_1.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
     plot_taylor_diagram('results', 
                         ['PySTEPS/sample_0', 'SmaAt_UNet/sample_0', 'MotionRNN/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
-                        'img/taylor_comparison_sample_0.jpg', std_range=[0.6, 1.6], std_num=6, colors=colors.colors)
+                        'img/taylor_comparison_sample_0.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
     plot_taylor_diagram('results',
                         ['PySTEPS/sample_1', 'SmaAt_UNet/sample_1', 'MotionRNN/sample_1', 'AttnUNet_GASVRE/sample_1'],
                         ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
-                        'img/taylor_comparison_sample_1.jpg', std_range=[0.6, 1.6], std_num=6, colors=colors.colors)
+                        'img/taylor_comparison_sample_1.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
