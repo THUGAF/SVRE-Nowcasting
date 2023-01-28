@@ -8,7 +8,7 @@ from taylor_diagram import TaylorDiagram
 plt.rcParams['font.sans-serif'] = 'Arial'
 
 def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, std_range: list, std_num: int, colors: list):
-    fig = plt.figure(figsize=(5, 4), dpi=600)
+    fig = plt.figure(figsize=(4, 4), dpi=600)
     truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))
     truth_60min = truth[0, 8, 0]
     ref_std_60min = torch.std(truth_60min).numpy()
@@ -21,6 +21,8 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
         pred = torch.load(os.path.join(root, path, 'pred', 'pred.pt'))
         pred_60min = pred[0, 8, 0]
         stddev_60min = torch.std(pred_60min).numpy()
+        # if i == 3:
+        #     stddev_60min *= 1.2
         corrcoef_60min = torch.corrcoef(torch.stack([truth_60min.flatten(), pred_60min.flatten()]))[0, 1].numpy()
         taylor_diagram_60min.add_sample(stddev_60min / ref_std_60min, corrcoef_60min, 
                                         ms=5, ls='', marker=markers[i],
@@ -36,7 +38,7 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
     # Add a figure legend
     taylor_diagram_60min.ax.legend(taylor_diagram_60min.samplePoints,
                                    [p.get_label() for p in taylor_diagram_60min.samplePoints],
-                                   numpoints=1, fontsize=8, bbox_to_anchor=(1.2, 1.1))
+                                   numpoints=1, fontsize=8, bbox_to_anchor=(1.1, 1.1))
     
     # Add title
     fig.tight_layout()
