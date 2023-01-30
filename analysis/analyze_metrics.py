@@ -27,9 +27,9 @@ def analyze_ablation_metrics():
     test_metrics, sample_0_metrics, sample_1_metrics = {}, {}, {}
     for name, dir_ in zip(model_names, model_dirs):
         test_metrics[name], sample_0_metrics[name], sample_1_metrics[name] = get_model_metrics(dir_)
-    test_metrics = concat_model_metrics(test_metrics, 8)
-    sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
-    sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
+    test_metrics = concat_model_metrics(test_metrics, 9)
+    sample_0_metrics = concat_model_metrics(sample_0_metrics, 9)
+    sample_1_metrics = concat_model_metrics(sample_1_metrics, 9)
     with pd.ExcelWriter('results/metrics_ablation.xlsx') as writer:
         test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
         sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='Model', float_format='%.4g')
@@ -42,9 +42,9 @@ def analyze_comparison_metrics():
     test_metrics, sample_0_metrics, sample_1_metrics = {}, {}, {}
     for name, dir_ in zip(model_names, model_dirs):
         test_metrics[name], sample_0_metrics[name], sample_1_metrics[name] = get_model_metrics(dir_)
-    test_metrics = concat_model_metrics(test_metrics, 8)
-    sample_0_metrics = concat_model_metrics(sample_0_metrics, 8)
-    sample_1_metrics = concat_model_metrics(sample_1_metrics, 8)
+    test_metrics = concat_model_metrics(test_metrics, 9)
+    sample_0_metrics = concat_model_metrics(sample_0_metrics, 9)
+    sample_1_metrics = concat_model_metrics(sample_1_metrics, 9)
     with pd.ExcelWriter('results/metrics_comparison.xlsx') as writer:
         test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
         sample_0_metrics.to_excel(writer, sheet_name='sample_0', index_label='Model', float_format='%.4g')

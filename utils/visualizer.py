@@ -138,7 +138,7 @@ def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: 
 
 def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     print('Plotting PSD...')
-    pred, truth = pred[0, 0, 0].detach().cpu(), truth[0, 0, 0].cpu()
+    pred, truth = pred[0, -1, 0].detach().cpu(), truth[0, -1, 0].cpu()
     len_y, len_x = pred.size(0), pred.size(1)
     xx, yy = np.arange(len_x), np.arange(len_y)
     xx, yy = np.meshgrid(xx, yy)

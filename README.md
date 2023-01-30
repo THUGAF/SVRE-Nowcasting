@@ -16,10 +16,33 @@ Discriminator
 
 Scaling blocks
 
-![DownBlock](img/DownBlock.jpg)
-![UpBlock](img/UpBlock.jpg)
+<img src=img/DownBlock.jpg width=300>
+<img src=img/UpBlock.jpg width=300>
+
+## Study Area
+
+![StudyArea](img/map.png)
 
 ## Performance overview
+
+![Vis1](img/vis_sample_0.jpg)
+![Vis2](img/vis_sample_1.jpg)
+
+<img src=img/taylor_ablation_sample_0.jpg width=300>
+<img src=img/taylor_comparison_sample_0.jpg width=300>
+
+<img src=img/taylor_ablation_sample_1.jpg width=300>
+<img src=img/taylor_comparison_sample_1.jpg width=300>
+
+<img src=img/psd_ablation_sample_0_x.jpg width=300>
+<img src=img/psd_ablation_sample_0_y.jpg width=300>
+<img src=img/psd_comparison_sample_0_x.jpg width=300>
+<img src=img/psd_comparison_sample_0_y.jpg width=300>
+
+<img src=img/psd_ablation_sample_1_x.jpg width=300>
+<img src=img/psd_ablation_sample_1_y.jpg width=300>
+<img src=img/psd_comparison_sample_1_x.jpg width=300>
+<img src=img/psd_comparison_sample_1_y.jpg width=300>
 
 ## Dependencies
 

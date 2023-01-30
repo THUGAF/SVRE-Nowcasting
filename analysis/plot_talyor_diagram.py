@@ -10,7 +10,7 @@ plt.rcParams['font.sans-serif'] = 'Arial'
 def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, std_range: list, std_num: int, colors: list):
     fig = plt.figure(figsize=(4, 4), dpi=600)
     truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))
-    truth_60min = truth[0, 8, 0]
+    truth_60min = truth[0, -1, 0]
     ref_std_60min = torch.std(truth_60min).numpy()
     taylor_diagram_60min = TaylorDiagram(ref_std_60min, fig, rect=111, 
                                          std_min=std_range[0], std_max=std_range[1],
@@ -19,11 +19,9 @@ def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, 
     markers = ['o', '^', 'p', 'd']
     for i, path in enumerate(paths):
         pred = torch.load(os.path.join(root, path, 'pred', 'pred.pt'))
-        pred_60min = pred[0, 8, 0]
+        pred_60min = pred[0, -1, 0]
         stddev_60min = torch.std(pred_60min).numpy()
         corrcoef_60min = torch.corrcoef(torch.stack([truth_60min.flatten(), pred_60min.flatten()]))[0, 1].numpy()
-        # if i == 3:
-        #     stddev_60min *= 1.2
         taylor_diagram_60min.add_sample(stddev_60min / ref_std_60min, corrcoef_60min, 
                                         ms=5, ls='', marker=markers[i],
                                         mfc=colors[i], mec=colors[i], label=models[i])

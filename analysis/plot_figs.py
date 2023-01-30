@@ -38,8 +38,8 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
     input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
-    input_ = np.flip(input_[0, 8, 0].numpy(), axis=0)
-    truth = np.flip(truth[0, 8, 0].numpy(), axis=0)
+    input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
+    truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
     num_subplot = len(model_names) + 2
     fig = plt.figure(figsize=(12, num_subplot // 2 * 6), dpi=600)
@@ -53,7 +53,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
             title = 'Observation (+60 min)'
         else:
             pred = torch.load(os.path.join(model_dirs[i - 2], stage, 'pred', 'pred.pt'))
-            tensor = np.flip(pred[0, 8, 0].numpy(), axis=0)
+            tensor = np.flip(pred[0, -1, 0].numpy(), axis=0)
             title = model_names[i - 2]
         ax.set_extent(AREA, crs=ccrs.PlateCarree())
         ax.coastlines()
@@ -87,8 +87,8 @@ def plot_maps_all(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
     input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
-    input_ = np.flip(input_[0, 8, 0].numpy(), axis=0)
-    truth = np.flip(truth[0, 8, 0].numpy(), axis=0)
+    input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
+    truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
     num_subplot = len(model_names) + 1
     fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=600)
@@ -99,7 +99,7 @@ def plot_maps_all(model_names, model_dirs, stage, img_path):
             title = 'Observation (+60 min)'
         else:
             pred = torch.load(os.path.join(model_dirs[i - 1], stage, 'pred', 'pred.pt'))
-            tensor = np.flip(pred[0, 8, 0].numpy(), axis=0)
+            tensor = np.flip(pred[0, -1, 0].numpy(), axis=0)
             title = model_names[i - 1]
         ax.set_extent(AREA, crs=ccrs.PlateCarree())
         ax.coastlines()
@@ -191,9 +191,9 @@ def plot_all(model_names, model_dirs):
 
 if __name__ == '__main__':
     plot_psd_ablation(['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], ['results/AttnUNet',
-                  'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
+                      'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
     plot_psd_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
-                    'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
+                        'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
     plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
              ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
               'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
