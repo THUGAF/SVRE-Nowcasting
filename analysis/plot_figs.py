@@ -157,15 +157,15 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     ax1.set_xscale('log', base=2)
     ax1.set_yscale('log', base=10)
     ax1.invert_xaxis()
-    ax1.set_xlabel('Wave Length (km)', fontsize=12)
-    ax1.set_ylabel('Power spectral density of X axis', fontsize=12)
+    ax1.set_xlabel('Wave Length (km)', fontsize=14)
+    ax1.set_ylabel('Power spectral density of X axis', fontsize=14)
     ax1.legend(legend)
 
     ax2.set_xscale('log', base=2)
     ax2.set_yscale('log', base=10)
     ax2.invert_xaxis()
-    ax2.set_xlabel('Wave Length (km)', fontsize=12)
-    ax2.set_ylabel('Power spectral density of Y axis', fontsize=12)
+    ax2.set_xlabel('Wave Length (km)', fontsize=14)
+    ax2.set_ylabel('Power spectral density of Y axis', fontsize=14)
     ax2.legend(legend)
 
     fig1.savefig(img_path_1, bbox_inches='tight')
@@ -194,6 +194,6 @@ if __name__ == '__main__':
                       'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
     plot_psd_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
                         'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
-    plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-             ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
-              'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
+    # plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
+    #          ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
+    #           'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
