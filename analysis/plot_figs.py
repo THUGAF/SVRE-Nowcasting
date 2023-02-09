@@ -41,55 +41,6 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
     truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
-    num_subplot = len(model_names) + 2
-    fig = plt.figure(figsize=(12, num_subplot // 2 * 6), dpi=600)
-    for i in range(num_subplot):
-        ax = fig.add_subplot(num_subplot // 2, 2, i + 1, projection=ccrs.Mercator())
-        if i == 0:
-            tensor = input_
-            title = 'Observation (0 min)'
-        elif i == 1:
-            tensor = truth
-            title = 'Observation (+60 min)'
-        else:
-            pred = torch.load(os.path.join(model_dirs[i - 2], stage, 'pred', 'pred.pt'))
-            tensor = np.flip(pred[0, -1, 0].numpy(), axis=0)
-            title = model_names[i - 2]
-        ax.set_extent(AREA, crs=ccrs.PlateCarree())
-        ax.coastlines()
-        ax.add_feature(cfeature.BORDERS)
-        ax.add_feature(cfeature.STATES)
-        ax.imshow(tensor, cmap=CMAP, norm=NORM, extent=AREA, transform=ccrs.PlateCarree())
-
-        xticks = np.arange(np.ceil(2 * AREA[0]) / 2, np.ceil(2 * AREA[1]) / 2, 0.5)
-        yticks = np.arange(np.ceil(2 * AREA[2]) / 2, np.ceil(2 * AREA[3]) / 2, 0.5)
-        ax.set_xticks(np.arange(np.ceil(AREA[0]), np.ceil(AREA[1]), 1), crs=ccrs.PlateCarree())
-        ax.set_yticks(np.arange(np.ceil(AREA[2]), np.ceil(AREA[3]), 1), crs=ccrs.PlateCarree())
-        ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=False, 
-                    linewidth=1, linestyle=':', color='k', alpha=0.8)
-
-        ax.xaxis.set_major_formatter(LongitudeFormatter())
-        ax.yaxis.set_major_formatter(LatitudeFormatter())
-        ax.tick_params(labelsize=20)
-        ax.set_title(title, fontsize=24)
-    
-    fig.subplots_adjust(right=0.88)
-    cax = fig.add_axes([0.90, 0.15, 0.03, 0.7])
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
-    cbar.set_label('dBZ', fontsize=20)
-    cbar.ax.tick_params(labelsize=18)
-
-    fig.savefig(img_path, bbox_inches='tight')
-    print('{} saved'.format(img_path))
-
-
-def plot_maps_all(model_names, model_dirs, stage, img_path):
-    print('Plotting {} ...'.format(img_path))
-    input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
-    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
-    input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
-    truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
-    
     num_subplot = len(model_names) + 1
     fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=600)
     for i in range(num_subplot):
@@ -185,8 +136,8 @@ def plot_psd_comparison(model_names, model_dirs):
 
 
 def plot_all(model_names, model_dirs):
-    plot_maps_all(model_names, model_dirs, 'sample_0', 'img/vis_sample_0.jpg')
-    plot_maps_all(model_names, model_dirs, 'sample_1', 'img/vis_sample_1.jpg')
+    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_sample_0.jpg')
+    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_sample_1.jpg')
 
 
 if __name__ == '__main__':
@@ -194,6 +145,6 @@ if __name__ == '__main__':
                       'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
     plot_psd_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
                         'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
-    # plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-    #          ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
-    #           'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
+    plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
+             ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
+              'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
