@@ -19,28 +19,6 @@ class AttnUNet(nn.Module):
         self.conv3 = DoubleConv2d(128, 256, kernel_size=3, padding=1)
         self.conv4 = DoubleConv2d(256, 256, kernel_size=3, padding=1)
 
-        # Dilation convolutions
-        # self.dilated_conv1 = nn.Sequential(
-        #     nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(inplace=True)
-        # )
-        # self.dilated_conv2 = nn.Sequential(
-        #     nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=2, padding=2),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(inplace=True)
-        # )
-        # self.dilated_conv3 = nn.Sequential(
-        #     nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=4, padding=4),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(inplace=True)
-        # )
-        # self.dilated_conv4 = nn.Sequential(
-        #     nn.Conv2d(256, 256, kernel_size=3, stride=1, dilation=8, padding=8),
-        #     nn.BatchNorm2d(256),
-        #     nn.ReLU(inplace=True)
-        # )
-
         # Decoder
         self.upsampling = nn.UpsamplingBilinear2d(scale_factor=2)
         if self.add_noise:
@@ -64,12 +42,6 @@ class AttnUNet(nn.Module):
         h3 = self.conv2(self.downsampling(h2))
         h4 = self.conv3(self.downsampling(h3))
         h5 = self.conv4(self.downsampling(h4))
-
-        # Dilation step
-        # h5 = self.dilated_conv1(h5)
-        # h5 = self.dilated_conv2(h5)
-        # h5 = self.dilated_conv3(h5)
-        # h5 = self.dilated_conv4(h5)
 
         # Decoding step
         if self.add_noise:
