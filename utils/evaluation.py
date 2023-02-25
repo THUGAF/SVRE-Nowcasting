@@ -12,23 +12,18 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(1)
     
-    hits = []
-    misses = []
-    false_alarms = []
-    correct_rejections = []
-
+    hits = np.zeros(seq_len)
+    misses = np.zeros(seq_len)
+    false_alarms = np.zeros(seq_len)
+    correct_rejections = np.zeros(seq_len)
     for s in range(seq_len):
         stat = 2 * (truth[:, s] > threshold).int() + (pred[:, s] > threshold).int()
-        hit = torch.sum(stat == 3).item()
-        miss = torch.sum(stat == 2).item()
-        false_alarm = torch.sum(stat == 1).item()
-        correct_rejection = torch.sum(stat == 0).item()
-        hits.append(hit)
-        misses.append(miss)
-        false_alarms.append(false_alarm)
-        correct_rejections.append(correct_rejection)
+        hits[s] = torch.sum(stat == 3).item()
+        misses[s] = torch.sum(stat == 2).item()
+        false_alarms[s] = torch.sum(stat == 1).item()
+        correct_rejections[s] = torch.sum(stat == 0).item()
 
-    return np.array(hits), np.array(misses), np.array(false_alarms), np.array(correct_rejections)
+    return hits, misses, false_alarms, correct_rejections
 
 
 def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, eps: float = 1e-4) \
@@ -58,12 +53,11 @@ def evaluate_me(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(1)
 
-    me_list = []
+    mes = np.zeros(seq_len)
     for s in range(seq_len):
-        me = torch.mean(pred[:, s] - truth[:, s])
-        me_list.append(me)
-
-    return np.array(me_list)
+        mes[s] = torch.mean(pred[:, s] - truth[:, s])
+    
+    return mes
 
 
 def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
@@ -71,12 +65,11 @@ def evaluate_mae(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(1)
 
-    mae_list = []
+    maes = np.zeros(seq_len)
     for s in range(seq_len):
-        mae = F.l1_loss(pred[:, s], truth[:, s])
-        mae_list.append(mae)
-
-    return np.array(mae_list)
+        maes[s] = F.l1_loss(pred[:, s], truth[:, s])
+    
+    return maes
 
 
 def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
@@ -84,14 +77,13 @@ def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.cpu(), truth.cpu()
     seq_len = pred.size(1)
 
-    kld_list = []
+    klds = np.zeros(seq_len)
     for s in range(seq_len):
         pred_batch_flatten, truth_batch_flatten = pred[:, s].flatten(start_dim=1), truth[:, s].flatten(start_dim=1)
         pred_batch_flatten, truth_batch_flatten = pred_batch_flatten.softmax(dim=-1), truth_batch_flatten.softmax(dim=-1)
-        kld = F.kl_div(pred_batch_flatten.log(), truth_batch_flatten, reduction='batchmean')
-        kld_list.append(kld)
+        klds[s] = F.kl_div(pred_batch_flatten.log(), truth_batch_flatten, reduction='batchmean')
     
-    return np.array(kld_list)
+    return klds
 
 
 def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
@@ -101,9 +93,8 @@ def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     pred, truth = pred.float(), truth.float()
     seq_len = pred.size(1)
 
-    ssim_list = []
+    ssims = np.zeros(seq_len)
     for s in range(seq_len):
-        ssim_ = ssim.ssim(pred[:, s], truth[:, s])
-        ssim_list.append(ssim_)
+        ssims[s] = ssim.ssim(pred[:, s], truth[:, s])
 
-    return np.array(ssim_list)
+    return ssims

@@ -42,7 +42,6 @@ def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str 
     ax.set_xlabel('epoch')
     ax.legend(['train loss', 'val loss'])
     fig.savefig(os.path.join(output_path, filename), bbox_inches='tight')
-    plt.close(fig)
 
 
 def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, timestamp: torch.Tensor, 
@@ -50,16 +49,17 @@ def plot_map(input_: torch.Tensor, pred: torch.Tensor, truth: torch.Tensor, time
     print('Plotting maps...')
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
-    _plot_map_figs(input_, root, timestamp[:, :input_.size(1)], stage, type_='input', 
-                   cmap=CMAP, norm=NORM)
-    _plot_map_figs(pred, root, timestamp[:, input_.size(1): input_.size(1) + pred.size(1)], 
-                   stage, type_='pred', cmap=CMAP, norm=NORM)
-    _plot_map_figs(truth, root, timestamp[:, input_.size(1): input_.size(1) + truth.size(1)], 
-                   stage, type_='truth', cmap=CMAP, norm=NORM)
+    input_steps, forecast_steps = input_.size(1), pred.size(1)
+    plot_figs(input_, root, timestamp[:, :input_steps], stage, type_='input',
+              cmap=CMAP, norm=NORM)
+    plot_figs(pred, root, timestamp[:, input_steps: input_steps + forecast_steps], 
+              stage, type_='pred', cmap=CMAP, norm=NORM)
+    plot_figs(truth, root, timestamp[:, input_steps: input_steps + forecast_steps],
+              stage, type_='truth', cmap=CMAP, norm=NORM)
 
 
-def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type_: str, 
-                   cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
+def plot_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, stage: str, type_: str, 
+              cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
     path = os.path.join(root, stage, type_)
     if not os.path.exists(path):
         os.mkdir(path)
@@ -78,7 +78,7 @@ def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, sta
             str_min = str(6 * (i + 1))
         file_path = '{}/{}.png'.format(path, str_min)
         current_datetime = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
-        _plot_map_fig(tensor[0, i, 0], file_path, current_datetime, cmap, norm)
+        plot_single_fig(tensor[0, i, 0], file_path, current_datetime, cmap, norm)
         image_list.append(imageio.imread(file_path))
 
     # plot the long image
@@ -90,17 +90,16 @@ def _plot_map_figs(tensor: torch.Tensor, root: str, timestamp: torch.Tensor, sta
         ax.imshow(np.flip(tensor[0, i, 0].numpy(), axis=0), cmap=cmap, norm=norm)
         ax.axis('off')
     
-    plt.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
     fig.savefig('{}/{}.png'.format(path, type_))
-    plt.close(fig)
     
     # make gif
     imageio.mimsave('{}/{}.gif'.format(path, type_), image_list, 'GIF', duration=0.2)
     print('{} saved'.format(type_))
 
 
-def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: datetime.datetime, 
-                  cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
+def plot_single_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: datetime.datetime, 
+                    cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm) -> None:
     fig = plt.figure(figsize=(8, 8), dpi=300)
     fig.suptitle('\n' + current_datetime.strftime('%Y-%m-%d %H:%M:%S'), fontsize=24)
     ax = plt.subplot(111, projection=ccrs.Mercator())
@@ -129,9 +128,8 @@ def _plot_map_fig(tensor_slice: torch.Tensor, file_path: str, current_datetime: 
     cbar.set_label('dBZ', fontsize=18)
     cbar.ax.tick_params(labelsize=16)
 
-    plt.subplots_adjust(left=0.1, right=1, bottom=0, top=1)
+    fig.subplots_adjust(left=0.1, right=1, bottom=0, top=1)
     fig.savefig(file_path)
-    plt.close(fig)
 
 
 def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
@@ -187,5 +185,4 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     ax2.legend(['Prediction', 'Observation'])
 
     fig.savefig('{}/{}_psd.png'.format(root, stage), bbox_inches='tight')
-    plt.close(fig)
     print('PSD saved')
