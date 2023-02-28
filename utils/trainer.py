@@ -9,7 +9,7 @@ from torch.optim.lr_scheduler import StepLR
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.transform as transform
-import model.losses as losses
+import utils.losses as losses
 
 
 class HiddenPrints:
@@ -74,7 +74,6 @@ class NNTrainer:
     def fit(self, model, train_loader, val_loader, test_loader):
         self.model = model
         self.model.to(self.args.device)
-        self.count_params()
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -95,6 +94,7 @@ class NNTrainer:
             self.test()
 
     def train(self):
+        self.count_params()
         # Pretrain: Load model and optimizer
         if self.args.pretrain:
             states = self.load_checkpoint()
@@ -251,7 +251,6 @@ class NNTrainer:
         print('\nVisualizing...')
         visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'test')
         print('Visualization complete')
-
         print('\nTest complete')
 
     @torch.no_grad()
@@ -327,7 +326,6 @@ class GANTrainer:
         self.model = model
         self.model.generator.to(self.args.device)
         self.model.discriminator.to(self.args.device)
-        self.count_params()
         self.train_loader = train_loader
         self.val_loader = val_loader
         self.test_loader = test_loader
@@ -352,6 +350,7 @@ class GANTrainer:
             self.test()
     
     def train(self):
+        self.count_params()
         # Pretrain: Load model and optimizer
         if self.args.pretrain:
             states = self.load_checkpoint()
@@ -563,7 +562,6 @@ class GANTrainer:
         print('\nVisualizing...')
         visualizer.plot_map(input_, pred, truth, timestamp, self.args.output_path, 'test')
         print('Visualization complete')
-
         print('\nTest complete')
 
     @torch.no_grad()
