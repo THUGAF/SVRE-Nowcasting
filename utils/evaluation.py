@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import utils.ssim as ssim
-import utils.scaler as scaler
+import utils.transform as transform
 
 
 def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
@@ -89,7 +89,7 @@ def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
 def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
-    pred, truth = scaler.convert_to_gray(pred), scaler.convert_to_gray(truth)
+    pred, truth = transform.convert_to_gray(pred), transform.convert_to_gray(truth)
     pred, truth = pred.float(), truth.float()
     seq_len = pred.size(1)
 

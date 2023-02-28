@@ -11,7 +11,7 @@ from pysteps.nowcasts.sprog import forecast as sprog
 import utils.dataloader as dataloader
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
-import utils.scaler as scaler
+import utils.transform as transform
 from utils.trainer import HiddenPrints
 
 
@@ -81,8 +81,8 @@ def test(args):
         if (i + 1) % args.display_interval == 0:
                 print('Batch: [{}][{}]'.format(i + 1, len(test_loader)))
 
-        pred_norm = scaler.minmax_norm(input_, args.vmax, args.vmin)
-        truth_norm = scaler.minmax_norm(truth, args.vmax, args.vmin)
+        pred_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
+        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
             metrics['POD-%ddBZ' % threshold].append(pod)
@@ -135,8 +135,8 @@ def predict(args):
     
         # evaluation
         print('\nEvaluating...')
-        pred_norm = scaler.minmax_norm(pred, args.vmax, args.vmin)
-        truth_norm = scaler.minmax_norm(truth, args.vmax, args.vmin)
+        pred_norm = transform.minmax_norm(pred, args.vmax, args.vmin)
+        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         
         metrics = {}
         metrics['Time'] = np.linspace(6, 60, 10)
