@@ -12,7 +12,7 @@ class GAN(nn.Module):
     """
 
     def __init__(self, generator: nn.Module, args: Any):
-        super(GAN, self).__init__()
+        super().__init__()
         self.generator = generator
         self.discriminator = Discriminator(
             total_steps=args.input_steps + args.forecast_steps
@@ -33,7 +33,7 @@ class Discriminator(nn.Module):
     """
 
     def __init__(self, total_steps: int):
-        super(Discriminator, self).__init__()
+        super().__init__()
         self.downsampling = nn.MaxPool2d(2, 2)
         self.in_conv = nn.Conv2d(total_steps, 32, kernel_size=1)    # (256, 256)
         self.d1 = DoubleConv2d(32, 64, kernel_size=3, padding=1)    # (128, 128)
@@ -86,7 +86,7 @@ class DoubleConv2d(nn.Module):
 
 class ChannelAttention(nn.Module):
     def __init__(self, in_channels: int, ratio: int = 16):
-        super(ChannelAttention, self).__init__()
+        super().__init__()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
         self.fc = nn.Sequential(nn.Conv2d(in_channels, in_channels // ratio, 1, bias=False),
