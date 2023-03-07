@@ -1,13 +1,12 @@
 import os
 import argparse
 import warnings
-
+import random
 import torch
 import pandas as pd
 import numpy as np
-from pysteps.motion.darts import DARTS as darts
-from pysteps.nowcasts.sprog import forecast as sprog
-
+from pysteps.motion.darts import DARTS as motion_method
+from pysteps.nowcasts.sprog import forecast as nowcast_method
 import utils.dataloader as dataloader
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
@@ -45,8 +44,9 @@ parser.add_argument('--vmin', type=float, default=-10.0)
 args = parser.parse_args()
 
 
-def main():
+def main(args):
     # fix the random seed
+    random.seed(args.seed)
     np.random.seed(args.seed)
     if args.test:
         test(args)
@@ -74,8 +74,8 @@ def test(args):
         truth = tensor[:, args.input_steps:]
         input_pysteps = input_[0, :, 0].numpy()
         with HiddenPrints():
-            velocity = darts(input_pysteps)
-            pred_pystpes = sprog(input_pysteps[-2:], velocity, args.forecast_steps, R_thr=-10, ar_order=1)
+            velocity = motion_method(input_pysteps)
+            pred_pystpes = nowcast_method(input_pysteps[-2:], velocity, args.forecast_steps, R_thr=-10, ar_order=1)
         pred = torch.from_numpy(np.nan_to_num(pred_pystpes)).view_as(truth)
 
         if (i + 1) % args.display_interval == 0:
@@ -123,8 +123,8 @@ def predict(args):
         truth = tensor[:, args.input_steps:]
         input_pysteps = input_[0, :, 0].numpy()
         with HiddenPrints():
-            velocity = darts(input_pysteps)
-            pred_pystpes = sprog(input_pysteps[-2:], velocity, args.forecast_steps, R_thr=-10, ar_order=1)
+            velocity = motion_method(input_pysteps)
+            pred_pystpes = nowcast_method(input_pysteps[-2:], velocity, args.forecast_steps, R_thr=-10, ar_order=1)
         pred = torch.from_numpy(np.nan_to_num(pred_pystpes)).view_as(truth)
 
         # visualization
@@ -158,4 +158,4 @@ def predict(args):
 
 
 if __name__ == '__main__':
-    main()
+    main(args)
