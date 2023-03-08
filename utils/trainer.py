@@ -86,7 +86,7 @@ class NNTrainer:
         self.optimizer = Adam(self.model.parameters(), lr=self.args.lr,
                               betas=(self.args.beta1, self.args.beta2),
                               weight_decay=self.args.weight_decay)
-        self.scheduler = StepLR(self.optimizer, step_size=5, gamma=0.5)
+        self.scheduler = StepLR(self.optimizer, step_size=2000, gamma=0.5)
 
         if self.args.train:
             self.train()
@@ -341,8 +341,8 @@ class GANTrainer:
         self.optimizer_d = Adam(self.model.discriminator.parameters(), lr=self.args.lr / 2,
                                 betas=(self.args.beta1, self.args.beta2),
                                 weight_decay=1)
-        self.scheduler_g = StepLR(self.optimizer_g, step_size=5, gamma=0.5)
-        self.scheduler_d = StepLR(self.optimizer_d, step_size=5, gamma=0.5)
+        self.scheduler_g = StepLR(self.optimizer_g, step_size=2000, gamma=0.5)
+        self.scheduler_d = StepLR(self.optimizer_d, step_size=2000, gamma=0.5)
 
         if self.args.train:
             self.train()
