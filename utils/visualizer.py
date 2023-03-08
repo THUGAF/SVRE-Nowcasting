@@ -17,8 +17,8 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 plt.rcParams['font.sans-serif'] = 'Arial'
 
 # Coordinate transformation
-TRANS_WGS84_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:3857')
-TRANS_UTM_TO_WGS84 = pyproj.Transformer.from_crs('epsg:3857', 'epsg:4326')
+TRANS_WGS84_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:32650')
+TRANS_UTM_TO_WGS84 = pyproj.Transformer.from_crs('epsg:32650', 'epsg:4326')
 
 # Global information
 CENTER_LON, CENTER_LAT = 116.47195, 39.808887
