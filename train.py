@@ -49,8 +49,8 @@ parser.add_argument('--seed', type=int, default=2023)
 
 # nowcasting settings
 parser.add_argument('--resolution', type=float, default=6.0, help='Time resolution (min)')
-parser.add_argument('--lon-range', type=int, nargs='+', default=[271, 527])
-parser.add_argument('--lat-range', type=int, nargs='+', default=[335, 591])
+parser.add_argument('--lon-range', type=int, nargs='+', default=[272, 528])
+parser.add_argument('--lat-range', type=int, nargs='+', default=[336, 592])
 parser.add_argument('--vmax', type=float, default=70.0)
 parser.add_argument('--vmin', type=float, default=-10.0)
 
