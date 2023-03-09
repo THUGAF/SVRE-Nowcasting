@@ -3,31 +3,11 @@ import numpy as np
 import pandas as pd
 import torch
 import matplotlib.pyplot as plt
-import matplotlib.colors as pcolors
 import matplotlib.cm as cm
-import pyproj
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-
-
-plt.rcParams['font.sans-serif'] = 'Arial'
-
-# Coordinate transformation
-TRANS_WGS84_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:3857')
-TRANS_UTM_TO_WGS84 = pyproj.Transformer.from_crs('epsg:3857', 'epsg:4326')
-
-# Global information
-CENTER_LON, CENTER_LAT = 116.47195, 39.808887
-CENTER_UTM_X, CENTER_UTM_Y = TRANS_WGS84_TO_UTM.transform(CENTER_LAT, CENTER_LON)
-LEFT_BOTTOM_LAT, LEFT_BOTTOM_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X - 128000, CENTER_UTM_Y - 64000)
-RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X + 128000, CENTER_UTM_Y + 192000)
-AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
-
-CMAP = pcolors.ListedColormap(['#ffffff', '#2aedef', '#1caff4', '#0a22f4', '#29fd2f',
-                               '#1ec722', '#139116', '#fffd38', '#e7bf2a', '#fb9124',
-                               '#f90f1c', '#d00b15', '#bd0713', '#da66fb', '#bb24eb'])
-NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), CMAP.N)
+from utils.visualizer import *
 
 
 plt.rcParams['font.sans-serif'] = 'Arial'

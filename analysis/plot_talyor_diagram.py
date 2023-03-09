@@ -7,7 +7,7 @@ from taylor_diagram import TaylorDiagram
 
 plt.rcParams['font.sans-serif'] = 'Arial'
 
-def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, std_range: list, std_num: int, colors: list):
+def plot_taylor_diagram(root: str, paths: list, models: list, target_path: str, std_range: tuple, std_num: int, colors: list):
     fig = plt.figure(figsize=(4, 4), dpi=600)
     truth = torch.load(os.path.join(root, paths[-1], 'truth', 'truth.pt'))
     truth_60min = truth[0, -1, 0]
@@ -48,16 +48,16 @@ if __name__ == '__main__':
     plot_taylor_diagram('results', 
                         ['AttnUNet/sample_0', 'AttnUNet_SVRE/sample_0', 'AttnUNet_GA/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                        'img/taylor_ablation_sample_0.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
+                        'img/taylor_ablation_sample_0.jpg', std_range=(0, 1), std_num=6, colors=colors.colors)
     plot_taylor_diagram('results',
                         ['AttnUNet/sample_1', 'AttnUNet_SVRE/sample_1', 'AttnUNet_GA/sample_1', 'AttnUNet_GASVRE/sample_1'],
                         ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                        'img/taylor_ablation_sample_1.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
+                        'img/taylor_ablation_sample_1.jpg', std_range=(0, 1), std_num=6, colors=colors.colors)
     plot_taylor_diagram('results', 
                         ['PySTEPS/sample_0', 'SmaAt_UNet/sample_0', 'MotionRNN/sample_0', 'AttnUNet_GASVRE/sample_0'], 
                         ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
-                        'img/taylor_comparison_sample_0.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
+                        'img/taylor_comparison_sample_0.jpg', std_range=(0, 1), std_num=6, colors=colors.colors)
     plot_taylor_diagram('results',
                         ['PySTEPS/sample_1', 'SmaAt_UNet/sample_1', 'MotionRNN/sample_1', 'AttnUNet_GASVRE/sample_1'],
                         ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'],
-                        'img/taylor_comparison_sample_1.jpg', std_range=[0, 1], std_num=6, colors=colors.colors)
+                        'img/taylor_comparison_sample_1.jpg', std_range=(0, 1), std_num=6, colors=colors.colors)

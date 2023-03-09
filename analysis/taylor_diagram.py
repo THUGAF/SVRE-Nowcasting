@@ -16,7 +16,7 @@ class TaylorDiagram(object):
     '''
 
     def __init__(self, std_ref, fig=None, rect=111, label='_', std_min=None, std_max=None, std_range=(0, 1.5),
-                 normalized=False, extend=False, std_label_format='%.2f', num_std=6, ylabel_text=None):
+                 normalized=False, extend=False, std_label_format='%.2f', num_std=6):
         '''
         Set up Taylor diagram axes, i.e. single quadrant polar
         plot, using `mpl_toolkits.axisartist.floating_axes`.
@@ -38,9 +38,10 @@ class TaylorDiagram(object):
 
         tr = PolarAxes.PolarTransform()
 
-        # ------correlation labels
+        # Correlation labels
         r_locs = np.array([0.2, 0.4, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99])
-        # ------extended to negative correlations
+
+        # Extended to negative correlations
         if extend:
             self.theta_max = np.pi
             r_locs = np.concatenate((-r_locs[:0:-1], r_locs))
@@ -61,10 +62,13 @@ class TaylorDiagram(object):
 
         std_locs = np.linspace(self.std_min, self.std_max, num_std)
         std_labels = ['{0}'.format(std_label_format) % v for v in std_locs]
+        gl2 = mGF.FixedLocator(std_locs)
         tf2 = mGF.DictFormatter(dict(zip(std_locs, std_labels)))
 
-        ghelper = mFA.GridHelperCurveLinear(tr, extremes=(0, self.theta_max, self.std_min, self.std_max),
-                                            grid_locator1=gl1, tick_formatter1=tf1, tick_formatter2=tf2)
+        ghelper = mFA.GridHelperCurveLinear(tr, 
+                                            extremes=(0, self.theta_max, self.std_min, self.std_max),
+                                            grid_locator1=gl1, tick_formatter1=tf1,
+                                            grid_locator2=gl2, tick_formatter2=tf2)
 
         if fig is None:
             fig = plt.figure()
@@ -72,8 +76,8 @@ class TaylorDiagram(object):
         ax = mFA.FloatingSubplot(fig, rect, grid_helper=ghelper)
         fig.add_subplot(ax)
 
-        # ------adjust axes
-        # ---------angle axis
+        # Adjust axes
+        # Angle axis
         ax.axis['top'].set_axis_direction('bottom')
         ax.axis['top'].toggle(ticklabels=True, label=True)
         ax.axis['top'].major_ticklabels.set_axis_direction('top')
@@ -81,19 +85,18 @@ class TaylorDiagram(object):
         ax.axis['top'].label.set_text('CC')
         ax.axis['top'].label.set_size('large')
 
-        # ---------X axis
+        # X axis
         ax.axis['left'].set_axis_direction('bottom')
         if normalized:
             ax.axis['left'].label.set_text('$\sigma_{\hat{y}}/\sigma_{y}$')
         else:
             ax.axis['left'].label.set_text('$\sigma_{\hat{y}}$')
         ax.axis['left'].label.set_size('large')
-        # ---------Y axis
+        
+        # Y axis
         ax.axis['right'].set_axis_direction('top')
         ax.axis['right'].toggle(ticklabels=True, label=True)
         ax.axis['right'].major_ticklabels.set_axis_direction('bottom' if extend else 'left')
-        if ylabel_text is not None:
-            ax.axis['right'].label.set_text(ylabel_text)
 
         if self.std_min:
             ax.axis['bottom'].toggle(ticklabels=False, label=False)
@@ -103,11 +106,12 @@ class TaylorDiagram(object):
         self._ax = ax  # Graphical axes
         self.ax = ax.get_aux_axes(tr)  # Polar coordinates
 
-        # ------add reference point and stddev contour
+        # Add reference point and stddev contour
         l, = self.ax.plot([0], self.std_ref, 'r*', ls='', ms=5, label=label)
-        theta = np.linspace(0, self.theta_max)
-        r = np.zeros_like(theta) + self.std_ref
-        # self.ax.plot(theta, r, 'k--', label='_')
+        if self.std_max > 1:
+            theta = np.linspace(0, self.theta_max)
+            r = np.zeros_like(theta) + self.std_ref
+            self.ax.plot(theta, r, 'k--', label='_')
 
         # ------collect sample points for latter use (e.g. legend)
         self.samplePoints = [l]
@@ -120,7 +124,6 @@ class TaylorDiagram(object):
         '''
         l, = self.ax.plot(np.arccos(corrcoef), stddev, *args, **kwargs)
         self.samplePoints.append(l)
-
         return l
 
     def add_grid(self, *args, **kwargs):
@@ -134,7 +137,6 @@ class TaylorDiagram(object):
 
         # ------calculate RMS difference
         rms = np.sqrt(self.std_ref**2 + rs**2 - 2 * self.std_ref * rs * np.cos(ts))
-
         contours = self.ax.contour(ts, rs, rms, levels, **kwargs)
-
         return contours
+    
