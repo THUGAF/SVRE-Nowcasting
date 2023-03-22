@@ -94,9 +94,9 @@ class CaseDataset(TrainingDataset):
         return len(self.case_indices)
 
 
-def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int, num_workers: int, 
-              train_ratio: float, valid_ratio: float, x_range: List[int], y_range: List[int]) \
-              -> Tuple[DataLoader, DataLoader, DataLoader]:
+def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int, num_workers: int,
+              train_ratio: float, valid_ratio: float, x_range: List[int], y_range: List[int],
+              pin_memory: bool = True) -> Tuple[DataLoader, DataLoader, DataLoader]:
     """Load training and test data.
 
     Args:
@@ -109,7 +109,8 @@ def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int,
         valid_ratio (float): Validation ratio of the whole dataset.
         x_range (List[int]): X range.
         y_range (List[int]): Y range.
-
+        pin_memory (bool): Whether to pin memory. Default is True.
+        
     Returns:
         DataLoader: Dataloader for training and test.
     """
@@ -129,11 +130,11 @@ def load_data(root: str, input_steps: int, forecast_steps: int, batch_size: int,
     test_set = Subset(dataset, test_indices)
 
     train_loader = DataLoader(train_set, batch_size=batch_size, num_workers=num_workers,
-                              shuffle=True, pin_memory=True)
+                              shuffle=True, pin_memory=pin_memory)
     val_loader = DataLoader(val_set, batch_size=batch_size, num_workers=num_workers,
-                            shuffle=False, pin_memory=True)
+                            shuffle=False, pin_memory=pin_memory)
     test_loader = DataLoader(test_set, batch_size=batch_size, num_workers=num_workers,
-                             shuffle=False, pin_memory=True)
+                             shuffle=False, pin_memory=pin_memory)
 
     print('\nDataset Length:', len(dataset))
     print('Train Set Length:', len(train_set))

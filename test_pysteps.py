@@ -78,7 +78,7 @@ def main(args):
     if args.test:
         test_loader = dataloader.load_data(args.data_path, args.input_steps, args.forecast_steps,
                                            1, args.num_workers, args.train_ratio, args.valid_ratio,
-                                           args.x_range, args.y_range)[2]
+                                           args.x_range, args.y_range, pin_memory=False)[2]
         test(test_loader)
     if args.predict:
         case_loader = dataloader.load_case(args.data_path, args.case_indices, args.input_steps,
@@ -115,8 +115,7 @@ def test(test_loader: DataLoader):
         input_pysteps = input_[0, :, 0].numpy()
         with HiddenPrints():
             velocity = DARTS(input_pysteps)
-            pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps,
-                                    R_thr=0, domain='spectral')
+            pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
             pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
 
@@ -148,7 +147,8 @@ def test(test_loader: DataLoader):
         if key != 'Step':
             metrics[key] /= len(test_loader)
     df = pd.DataFrame(data=metrics)
-    df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), float_format='%.6f', index=False)
+    df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
+              float_format='%.6f', index=False)
     print('Test metrics saved')
 
 
@@ -163,8 +163,7 @@ def predict(case_loader: DataLoader):
 
         input_pysteps = input_[0, :, 0].numpy()
         velocity = DARTS(input_pysteps)
-        pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, 
-                                R_thr=0, domain='spectral')
+        pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
         pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
         tensors = (pred, truth, input_)
@@ -184,9 +183,10 @@ def predict(case_loader: DataLoader):
         pred_norm = transform.minmax_norm(pred, args.vmax, args.vmin)
         truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
-        metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
+        metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), float_format='%.6f', index=False)
+        df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), 
+                  float_format='%.6f', index=False)
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures

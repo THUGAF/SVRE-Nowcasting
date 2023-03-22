@@ -243,7 +243,7 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
             input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
             truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
             pred_norm = model(input_norm)
-            loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm) + \
+            loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
                 args.weight_svre * svre_loss(pred_norm, truth_norm)
 
             # Backward propagation
@@ -286,7 +286,7 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
                 input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
                 truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
                 pred_norm = model(input_norm)
-                loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm) + \
+                loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
                     args.weight_svre * svre_loss(pred_norm, truth_norm)
 
                 # Record and print loss
@@ -355,7 +355,7 @@ def test(model: nn.Module, test_loader: DataLoader):
         input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
         truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         pred_norm = model(input_norm)
-        loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm) + \
+        loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
             args.weight_svre * svre_loss(pred_norm, truth_norm)
         pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
 
