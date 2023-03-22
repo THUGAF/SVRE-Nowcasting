@@ -1,11 +1,10 @@
 from typing import Any
 import torch
 import torch.nn as nn
-from model import *
 
 
 class GAN(nn.Module):
-    r"""Deep Generative Adversarial Network.
+    """Deep Generative Adversarial Network.
 
     Args:
         args (args): Necessary arguments.
@@ -25,7 +24,7 @@ class GAN(nn.Module):
 
 
 class Discriminator(nn.Module):
-    r"""Discriminator.
+    """Discriminator.
 
     Args:
         in_channels (list): Number of input channels.

@@ -1,20 +1,65 @@
-from typing import Tuple, List
+from typing import Tuple, Union, List
 import torch
 import torch.nn as nn
-from .layers import ConvLSTMCell, Down, Up
+
+
+class ConvLSTMCell(nn.Module):    
+    def __init__(self, channels: int, filters: int, kernel_size: Union[int, tuple] = 3, 
+                 padding: Union[int, tuple] = 1):
+        super().__init__()
+        self.filters = filters
+        self.conv = nn.Conv2d(channels + filters, filters * 4, kernel_size, padding=padding)
+        
+    def forward(self, x: torch.Tensor, h: torch.Tensor, c: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
+        # x: 4D tensor (B, C, H, W)
+        batch_size, _, height, width = x.size()
+        # Initialize h and c with torch.zeros
+        if h is None:
+            h = torch.zeros(size=(batch_size, self.filters, height, width)).type_as(x)
+        if c is None:
+            c = torch.zeros(size=(batch_size, self.filters, height, width)).type_as(x)
+        # forward process
+        i, f, g, o = torch.split(self.conv(torch.cat([x, h], dim=1)), self.filters, dim=1)
+        i, f, g, o = torch.sigmoid(i), torch.sigmoid(f), torch.tanh(g), torch.sigmoid(o)
+        c = f * c + i * g
+        h = o * torch.tanh(c)
+        return h, c
+
+
+class Down(nn.Module):  
+    def __init__(self, channels: int, filters: int, kernel_size: Union[int, tuple] = 3, padding: Union[int, tuple] = 1):
+        super().__init__()
+
+        self.down = nn.Sequential(
+            nn.Conv2d(channels, filters, kernel_size=kernel_size, stride=2, padding=padding),
+            nn.BatchNorm2d(filters),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.down(x)
+        return x
+
+
+class Up(nn.Module):   
+    def __init__(self, channels: int, filters: int, kernel_size: Union[int, tuple] = 3, 
+                 padding: Union[int, tuple] = 1):
+        super().__init__()
+
+        self.up = nn.Sequential(
+            nn.ConvTranspose2d(channels, filters, kernel_size=kernel_size, stride=2, padding=padding, output_padding=1),
+            nn.BatchNorm2d(filters),
+            nn.ReLU(inplace=True)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.up(x)
+        return x
 
 
 class Encoder(nn.Module):
-    r"""N-layer ConvLSTM Encoder for 5D (B, L, C, H, W) input. Each layer of the encoder includes a ConvLSTM layer 
-        and a convolutional layer.
-        
-    Args:
-        in_channels (int): Input channels.
-        hidden_channels (list[int]): Channels of convolutional layers.
-    """
-
     def __init__(self, in_channels: int, hidden_channels: List[int]):
-        super(Encoder, self).__init__()
+        super().__init__()
         self.num_layers = len(hidden_channels)
 
         self.down0 = Down(in_channels, hidden_channels[0])
@@ -40,17 +85,8 @@ class Encoder(nn.Module):
 
 
 class Forecaster(nn.Module):
-    r"""N-layer ConvLSTM forecaster for 5D (B, L, C, H, W) input. Each layer of the forecaster includes a ConvLSTM layer 
-        and a bilinear-resize-convolutional layer.
-
-    Args:
-        forecast_steps (int): Forecast steps.
-        out_channels (int): Output channels.
-        hidden_channels (list[int]): Channels of convolutional layers.
-    """
-
     def __init__(self, forecast_steps: int, out_channels: int, hidden_channels: List[int]):
-        super(Forecaster, self).__init__()
+        super().__init__()
         self.num_layers = len(hidden_channels)
         self.forecast_steps = forecast_steps
 
@@ -80,15 +116,10 @@ class Forecaster(nn.Module):
         return output
 
 
-class EncoderForecaster(nn.Module):
-    r"""Encoder-forecaster architecture.
-
-    See :class: `models.convrnn.Encoder` and :class:`models.convrnn.forecaster` for details.
-    """
-
+class ConvLSTM(nn.Module):
     def __init__(self, forecast_steps: int, in_channels: int = 1, out_channels: int = 1, 
                  hidden_channels: List[int] = [64, 64, 64, 64]):
-        super(EncoderForecaster, self).__init__()
+        super().__init__()
         self.encoder = Encoder(in_channels, hidden_channels)
         self.forecaster = Forecaster(forecast_steps, out_channels, hidden_channels)
     
