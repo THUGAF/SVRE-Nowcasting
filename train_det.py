@@ -91,13 +91,13 @@ def main(args):
     if args.model == 'AttnUNet':
         model = models.AttnUNet(args.input_steps, args.forecast_steps).to(args.device)
     elif args.model == 'ConvLSTM': 
-        model = models.ConvLSTM(args.forecast_steps)
+        model = models.ConvLSTM(args.forecast_steps).to(args.device)
     elif args.model == 'SmaAt_UNet': 
-        model = models.SmaAt_UNet(args.input_steps, args.forecast_steps)
+        model = models.SmaAt_UNet(args.input_steps, args.forecast_steps).to(args.device)
     elif args.model == 'MotionRNN':
         model = models.MotionRNN(args.forecast_steps,
                                  args.y_range[1] - args.y_range[0], 
-                                 args.x_range[1] - args.x_range[0])
+                                 args.x_range[1] - args.x_range[0]).to(args.device)
     count_params(model)
     optimizer = optim.Adam(model.parameters(), args.learning_rate,
                            betas=(args.beta1, args.beta2),
@@ -293,8 +293,8 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
                 val_loss_epoch += loss.item()
                 if (i + 1) % args.display_interval == 0:
                     print('Epoch: [{}][{}]\tBatch: [{}][{}]\tLoss: {:.4f}\tTime: {:.4f}'.format(
-                        epoch + 1, total_epochs, i + 1, len(val_loader), loss.item()), 
-                        time.time() - val_batch_timer)
+                        epoch + 1, total_epochs, i + 1, len(val_loader), loss.item(), 
+                        time.time() - val_batch_timer))
                     val_batch_timer = time.time()
             
         # Save val loss
