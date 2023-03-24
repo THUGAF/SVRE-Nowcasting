@@ -1,66 +1,5 @@
-from typing import Any
 import torch
 import torch.nn as nn
-
-
-class GAN(nn.Module):
-    """Deep Generative Adversarial Network.
-
-    Args:
-        args (args): Necessary arguments.
-    """
-
-    def __init__(self, generator: nn.Module, args: Any):
-        super().__init__()
-        self.generator = generator
-        self.discriminator = Discriminator(
-            total_steps=args.input_steps + args.forecast_steps
-        )
-        
-        self.args = args
-    
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.generator(x)
-
-
-class Discriminator(nn.Module):
-    """Discriminator.
-
-    Args:
-        in_channels (list): Number of input channels.
-        num_picks (int): Number of images for random selection.
-    """
-
-    def __init__(self, total_steps: int):
-        super().__init__()
-        self.downsampling = nn.MaxPool2d(2, 2)
-        self.in_conv = nn.Conv2d(total_steps, 32, kernel_size=1)    # (256, 256)
-        self.d1 = DoubleConv2d(32, 64, kernel_size=3, padding=1)    # (128, 128)
-        self.d2 = DoubleConv2d(64, 64, kernel_size=3, padding=1)    # (64, 64)
-        self.d3 = DoubleConv2d(64, 128, kernel_size=3, padding=1)   # (32, 32)
-        self.d4 = DoubleConv2d(128, 128, kernel_size=3, padding=1)  # (16, 16)
-        self.d5 = DoubleConv2d(128, 256, kernel_size=3, padding=1)  # (8, 8)
-        self.d6 = DoubleConv2d(256, 256, kernel_size=3, padding=1)  # (4, 4)
-        self.out_conv = nn.Conv2d(256, 1, kernel_size=4)
-        self.sigmoid = nn.Sigmoid()
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # Embed L into channel dimension
-        batch_size, length, channels, height, width = x.size()
-        # (B, L, C, H, W) -> (B, C*L, H, W)
-        h = x.reshape(batch_size, length * channels, height, width)
-        h = self.in_conv(h)
-        h = self.d1(self.downsampling(h))
-        h = self.d2(self.downsampling(h))
-        h = self.d3(self.downsampling(h))
-        h = self.d4(self.downsampling(h))
-        h = self.d5(self.downsampling(h))
-        h = self.d6(self.downsampling(h))
-        out = self.out_conv(h)
-        # out: (B, 1)
-        out = out.reshape(batch_size, 1)
-        out = self.sigmoid(out)
-        return out
 
 
 class DoubleConv2d(nn.Module):
@@ -124,3 +63,44 @@ class CBAM(nn.Module):
         out = self.channel_att(x) * x
         out = self.spatial_att(out) * out
         return out
+
+
+class Discriminator(nn.Module):
+    """Discriminator.
+
+    Args:
+        in_channels (list): Number of input channels.
+        num_picks (int): Number of images for random selection.
+    """
+
+    def __init__(self, total_steps: int):
+        super().__init__()
+        self.downsampling = nn.MaxPool2d(2, 2)
+        self.in_conv = nn.Conv2d(total_steps, 32, kernel_size=1)    # (256, 256)
+        self.d1 = DoubleConv2d(32, 64, kernel_size=3, padding=1)    # (128, 128)
+        self.d2 = DoubleConv2d(64, 64, kernel_size=3, padding=1)    # (64, 64)
+        self.d3 = DoubleConv2d(64, 128, kernel_size=3, padding=1)   # (32, 32)
+        self.d4 = DoubleConv2d(128, 128, kernel_size=3, padding=1)  # (16, 16)
+        self.d5 = DoubleConv2d(128, 256, kernel_size=3, padding=1)  # (8, 8)
+        self.d6 = DoubleConv2d(256, 256, kernel_size=3, padding=1)  # (4, 4)
+        self.out_conv = nn.Conv2d(256, 1, kernel_size=4)
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Embed L into channel dimension
+        batch_size, length, channels, height, width = x.size()
+        # (B, L, C, H, W) -> (B, C*L, H, W)
+        h = x.reshape(batch_size, length * channels, height, width)
+        h = self.in_conv(h)
+        h = self.d1(self.downsampling(h))
+        h = self.d2(self.downsampling(h))
+        h = self.d3(self.downsampling(h))
+        h = self.d4(self.downsampling(h))
+        h = self.d5(self.downsampling(h))
+        h = self.d6(self.downsampling(h))
+        out = self.out_conv(h)
+        # out: (B, 1)
+        out = out.reshape(batch_size, 1)
+        out = self.sigmoid(out)
+        return out
+    

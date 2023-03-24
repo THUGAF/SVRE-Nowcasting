@@ -27,8 +27,8 @@ parser.add_argument('--input-steps', type=int, default=10)
 parser.add_argument('--forecast-steps', type=int, default=10)
 
 # data loading settings
-parser.add_argument('--train-ratio', type=float, default=0.64)
-parser.add_argument('--valid-ratio', type=float, default=0.16)
+parser.add_argument('--train-ratio', type=float, default=0.7)
+parser.add_argument('--valid-ratio', type=float, default=0.1)
 parser.add_argument('--case-indices', type=int, nargs='+', default=[0])
 
 # model settings
@@ -107,17 +107,12 @@ def main(args):
     if not os.path.exists(args.output_path):
         os.mkdir(args.output_path)
 
-    # Load data
+    # Train, test, and predict
+    print('\n### Start tasks ###')
     if args.train or args.test:
         train_loader, val_loader, test_loader = dataloader.load_data(args.data_path, 
             args.input_steps, args.forecast_steps, args.batch_size, args.num_workers, 
             args.train_ratio, args.valid_ratio, args.x_range, args.y_range)
-    if args.predict:
-        case_loader = dataloader.load_case(args.data_path, args.case_indices, args.input_steps, 
-            args.forecast_steps, args.x_range, args.y_range)
-
-    # Train, test, and predict
-    print('\n### Start tasks ###')
     if args.train:
         train(model, optimizer, train_loader, val_loader)
     if args.test:
@@ -334,7 +329,6 @@ def test(model: nn.Module, test_loader: DataLoader):
     metrics['RMSE'] = 0
     metrics['SSIM'] = 0
     metrics['KLD'] = 0
-    test_loss = 0
 
     # Test
     print('\n[Test]')
@@ -355,15 +349,12 @@ def test(model: nn.Module, test_loader: DataLoader):
         input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
         truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         pred_norm = model(input_norm)
-        loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
-            args.weight_svre * svre_loss(pred_norm, truth_norm)
         pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
 
-        # Record and print loss
-        test_loss += loss.item()
+        # Record and print time
         if (i + 1) % args.display_interval == 0:
-            print('Batch: [{}][{}]\tLoss: {:.4f}\tTime: {:.4f}'.format(
-                i + 1, len(test_loader), loss.item(), time.time() - test_batch_timer))
+            print('Batch: [{}][{}]\tTime: {:.4f}'.format(
+                i + 1, len(test_loader), time.time() - test_batch_timer))
             test_batch_timer = time.time()
 
         # Evaluation
@@ -378,9 +369,8 @@ def test(model: nn.Module, test_loader: DataLoader):
         metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
     
-    # Print test loss
-    test_loss = test_loss / len(test_loader)
-    print('Loss: {:.4f}\tTime: {:.4f}'.format(test_loss, time.time() - test_timer))
+    # Print time
+    print('Time: {:.4f}'.format(time.time() - test_timer))
 
     # Save metrics
     for key in metrics.keys():

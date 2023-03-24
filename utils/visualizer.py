@@ -15,7 +15,6 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from joblib import Parallel, delayed
 
 
-
 # Coordinate transformation
 TRANS_WGS84_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:32650')
 TRANS_UTM_TO_WGS84 = pyproj.Transformer.from_crs('epsg:32650', 'epsg:4326')
