@@ -8,9 +8,9 @@ nohup python -u train_det.py \
     --model SmaAt_UNet \
     --max-iterations 100000 \
     --early-stopping \
-    --batch-size 16 \
+    --batch-size 8 \
     --learning-rate 1e-4 \
-    --weight-decay 1e-4 \
+    --weight-decay 1e-2 \
     --weight-recon 10 \
     --num-threads 8 \
     --num-workers 8 \

@@ -144,7 +144,7 @@ def test(test_loader: DataLoader):
 
     # Save metrics
     for key in metrics.keys():
-        if key != 'Step':
+        if key != 'Time':
             metrics[key] /= len(test_loader)
     df = pd.DataFrame(data=metrics)
     df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
@@ -170,7 +170,7 @@ def predict(case_loader: DataLoader):
     
         # Save metrics
         metrics = {}
-        metrics['Step'] = np.linspace(1, args.forecast_steps)
+        metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
         # Evaluation
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)

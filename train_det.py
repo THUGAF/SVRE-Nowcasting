@@ -324,7 +324,7 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
 def test(model: nn.Module, test_loader: DataLoader):
     # Init metric dict
     metrics = {}
-    metrics['Step'] = np.linspace(1, args.forecast_steps) * args.resolution
+    metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
     for threshold in args.thresholds:
         metrics['POD_{:.1f}'.format(threshold)] = 0
         metrics['FAR_{:.1f}'.format(threshold)] = 0
@@ -384,7 +384,7 @@ def test(model: nn.Module, test_loader: DataLoader):
 
     # Save metrics
     for key in metrics.keys():
-        if key != 'Step':
+        if key != 'Time':
             metrics[key] /= len(test_loader)
     df = pd.DataFrame(data=metrics)
     df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), float_format='%.4f', index=False)
@@ -400,7 +400,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
     model.load_state_dict(states['model'])
     model.eval()
     for i, (tensor, timestamp) in enumerate(case_loader):
-        time_str = datetime.datetime.utcfromtimestampstamp(int(timestamp[0, i]))
+        time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
         print('\nCase {} at {}'.format(i, time_str))
         
@@ -416,7 +416,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
         
         # Save metrics
         metrics = {}
-        metrics['Step'] = np.linspace(1, args.forecast_steps)
+        metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
         # Evaluation
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
@@ -427,7 +427,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
         metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
         metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
-        metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
+        metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
         df = pd.DataFrame(data=metrics)
         df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), float_format='%.4f', index=False)
         print('Case {} metrics saved'.format(i))

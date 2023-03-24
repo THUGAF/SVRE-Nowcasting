@@ -60,7 +60,6 @@ class TrainingDataset(Dataset):
         for file_ in files:
             tensor_single, timestamp_single = torch.load(file_)
             tensor_single = tensor_single[:, self.y_range[0]: self.y_range[1], self.x_range[0]: self.x_range[1]]
-            tensor_single = tensor_single.transpose(2, 1)
             tensor.append(tensor_single)
             timestamp.append(timestamp_single)
         tensor = torch.stack(tensor)

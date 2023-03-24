@@ -221,7 +221,7 @@ def reshape_patch_back(tensor, patch_size):
     
 
 class MotionRNN(nn.Module):
-    def __init__(self, forecast_steps, img_height, img_width, num_layers=4, num_hidden=64, patch_size=1):
+    def __init__(self, forecast_steps, img_height, img_width, num_layers=4, num_hidden=64, patch_size=4):
         super().__init__()
         self.forecast_steps = forecast_steps
         self.patch_size = patch_size
