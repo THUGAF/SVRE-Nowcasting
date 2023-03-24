@@ -91,8 +91,8 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
     path = os.path.join(root, stage, name)
     if not os.path.exists(path):
         os.mkdir(path)
-    tensor = tensor.detach().cpu()
-    seq_len = tensor.size(1)
+    tensor = tensor.detach().cpu().numpy()
+    seq_len = tensor.shape[1]
     image_list = []
     for i in range(seq_len):
         # minus represents the time before current moment
@@ -103,7 +103,7 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
         file_path = '{}/{}_{}.jpg'.format(path, name, str_min)
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
-        plot_single_fig(tensor[0, i, 0], file_path, time_str, cmap, norm)
+        plot_single_fig(np.flip(tensor[0, i, 0], axis=0), file_path, time_str, cmap, norm)
         image_list.append(imageio.imread(file_path))
 
     # plot the long image
@@ -112,7 +112,7 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
     fig = plt.figure(figsize=(num_cols, num_rows), dpi=120)
     for i in range(seq_len):
         ax = fig.add_subplot(num_rows, num_cols, i + 1)
-        ax.pclormesh(tensor[0, i, 0].numpy(), cmap=cmap, norm=norm)
+        ax.imshow(np.flip(tensor[0, i, 0], axis=0), cmap=cmap, norm=norm)
         ax.axis('off')
     
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
@@ -135,7 +135,7 @@ def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str,
     ax.add_feature(cfeature.BORDERS)
     ax.add_feature(cfeature.STATES)
 
-    ax.pcolormesh(tensor, cmap=cmap, norm=norm, extent=AREA, transform=ccrs.PlateCarree())
+    ax.imshow(tensor, cmap=cmap, norm=norm, extent=AREA, transform=ccrs.PlateCarree())
 
     xticks = np.arange(np.ceil(AREA[0]), np.ceil(AREA[1]))
     yticks = np.arange(np.ceil(AREA[2]), np.ceil(AREA[3]))
