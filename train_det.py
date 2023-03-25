@@ -149,23 +149,23 @@ def load_checkpoint(filename: str, device: str):
     return states
 
 
-def early_stopping(metric: list, patience: int = 10):
+def early_stopping(score: list, patience: int = 10):
     early_stopping_flag = False
     counter = 0
-    current_epoch = len(metric)
+    current_epoch = len(score)
     if current_epoch == 1:
-        min_val_loss = np.inf
+        min_score = np.inf
     else:
-        min_val_loss = min(metric[:-1])
-    if min_val_loss > metric[-1]:
-        print('Metric decreased: {:.4f} --> {:.4f}'.format(min_val_loss, metric[-1]))
+        min_score = min(score[:-1])
+    if min_score > score[-1]:
+        print('Metric decreased: {:.4f} --> {:.4f}'.format(min_score, score[-1]))
         checkpoint_path = os.path.join(args.output_path, 'checkpoint.pth')
         bestparams_path = os.path.join(args.output_path, 'bestparams.pth')
         shutil.copyfile(checkpoint_path, bestparams_path)
     else:
-        min_val_loss_epoch = metric.index(min(metric))
-        if current_epoch > min_val_loss_epoch:
-            counter = current_epoch - min_val_loss_epoch
+        min_score_epoch = score.index(min(score))
+        if current_epoch > min_score_epoch:
+            counter = current_epoch - min_score_epoch
             print('EarlyStopping counter: {} out of {}'.format(counter, patience))
             if counter == patience:
                 early_stopping_flag = True
@@ -302,7 +302,7 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
         print('Val loss saved')
 
         # Plot loss
-        visualizer.plot_loss(train_loss, val_loss, args.output_path, 'loss.jpg')
+        visualizer.plot_loss(train_loss, val_loss, os.path.join(args.output_path, 'loss.png'))
         print('Loss figure saved')
 
         # Save checkpoint
@@ -377,18 +377,24 @@ def test(model: nn.Module, test_loader: DataLoader):
         if key != 'Time':
             metrics[key] /= len(test_loader)
     df = pd.DataFrame(data=metrics)
-    df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), float_format='%.4f', index=False)
+    df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
+              float_format='%.6f', index=False)
     print('Test metrics saved')
 
 
 @torch.no_grad()
-def predict(model: nn.Module, case_loader: DataLoader):   
+def predict(model: nn.Module, case_loader: DataLoader):
+    # Init metric dict
+    metrics = {}
+    metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
+
     # Predict
     print('\n[Predict]')
     bestparams_path = os.path.join(args.output_path, 'bestparams.pth')
     states = load_checkpoint(bestparams_path, args.device)
     model.load_state_dict(states['model'])
     model.eval()
+
     for i, (tensor, timestamp) in enumerate(case_loader):
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
@@ -402,11 +408,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
         truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         pred_norm = model(input_norm)
         pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
-        tensors = (pred, truth, input_)
         
-        # Save metrics
-        metrics = {}
-        metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
         # Evaluation
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
@@ -418,14 +420,27 @@ def predict(model: nn.Module, case_loader: DataLoader):
         metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
+        
+        # Save metrics
         df = pd.DataFrame(data=metrics)
-        df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), float_format='%.4f', index=False)
+        df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), 
+                  float_format='%.6f', index=False)
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures
-        visualizer.save_tensors(tensors, timestamp, args.output_path, 'case_{}'.format(i))
+        visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
+                               args.output_path, 'case_{}'.format(i), 'input')
+        visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                               args.output_path, 'case_{}'.format(i), 'truth')
+        visualizer.save_tensor(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                               args.output_path, 'case_{}'.format(i), 'pred')
         print('Tensors saved')
-        visualizer.plot_maps(tensors, timestamp, args.output_path, 'case_{}'.format(i))
+        visualizer.plot_figs(input_, timestamp[:, :args.input_steps],
+                             args.output_path, 'case_{}'.format(i), 'input')
+        visualizer.plot_figs(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                             args.output_path, 'case_{}'.format(i), 'truth')
+        visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                             args.output_path, 'case_{}'.format(i), 'pred')
         print('Figures saved')
     
     print('\nPrediction complete')

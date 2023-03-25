@@ -12,7 +12,6 @@ import pyproj
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-from joblib import Parallel, delayed
 
 
 # Coordinate transformation
@@ -31,21 +30,9 @@ CMAP = pcolors.ListedColormap(['#ffffff', '#2aedef', '#1caff4', '#0a22f4', '#29f
 NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), CMAP.N)
 
 
-def save_tensors(tensors: tuple, timestamps: torch.Tensor, root: str, stage: str):
-    print('Saving tensors...')
+def save_tensor(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: str, name: str):
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
-    pred, truth, input_ = tensors
-    input_steps = input_.size(1)
-    forecast_steps = pred.size(1)
-    input_timestamps = timestamps[:, :input_steps]
-    forecast_timestamps = timestamps[:, input_steps: input_steps + forecast_steps]
-    save_single_tensor(pred, forecast_timestamps, root, stage, 'pred')
-    save_single_tensor(truth, forecast_timestamps, root, stage, 'truth')
-    save_single_tensor(input_, input_timestamps, root, stage, 'input')
-
-
-def save_single_tensor(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: str, name: str):
     path = os.path.join(root, stage, name)
     if not os.path.exists(path):
         os.mkdir(path)
@@ -53,7 +40,7 @@ def save_single_tensor(tensor: torch.Tensor, timestamp: torch.Tensor, root: str,
     torch.save((tensor, timestamp), '{}/{}.pt'.format(path, name))
 
 
-def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str):
+def plot_loss(train_loss: list, val_loss: list, filename: str):
     print('Plotting loss...')
     fig = plt.figure(figsize=(8, 4), dpi=300)
     ax = plt.subplot(111)
@@ -61,37 +48,33 @@ def plot_loss(train_loss: list, val_loss: list, output_path: str, filename: str)
     ax.plot(range(1, len(val_loss) + 1), val_loss, 'r')
     ax.set_xlabel('epoch')
     ax.legend(['train loss', 'val loss'])
-    fig.savefig(os.path.join(output_path, filename), bbox_inches='tight')
+    fig.savefig(filename, bbox_inches='tight')
     plt.close(fig)
 
 
-def plot_maps(tensors: tuple, timestamps: torch.Tensor, root: str, stage: str):
-    print('Plotting maps...')
+def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: str, name: str):
     if not os.path.exists(os.path.join(root, stage)):
         os.mkdir(os.path.join(root, stage))
-    
-    pred, truth, input_ = tensors
-    input_steps = input_.size(1)
-    forecast_steps = pred.size(1)
-    input_timestamps = timestamps[:, :input_steps]
-    forecast_timestamps = timestamps[:, input_steps: input_steps + forecast_steps]
-    timestamps = [forecast_timestamps, forecast_timestamps, input_timestamps, 
-                  forecast_timestamps, forecast_timestamps, input_timestamps]
-    names = ['pred', 'truth', 'input']
-
-    # Multi-processing
-    parallel = Parallel(n_jobs=3, prefer='processes')
-    parallel(delayed(plot_figs)(tensors[i], timestamps[i], root, stage, 
-                                names[i], CMAP, NORM) for i in range(3))
-
-
-def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: str, name: str, 
-              cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm):
     path = os.path.join(root, stage, name)
     if not os.path.exists(path):
         os.mkdir(path)
     tensor = tensor.detach().cpu().numpy()
     seq_len = tensor.shape[1]
+
+    # plot long fig
+    num_rows = 2 if seq_len > 10 else 1
+    num_cols = seq_len // num_rows
+    fig = plt.figure(figsize=(num_cols, num_rows), dpi=120)
+    for i in range(seq_len):
+        ax = fig.add_subplot(num_rows, num_cols, i + 1)
+        ax.imshow(np.flip(tensor[0, i, 0], axis=0), cmap=CMAP, norm=NORM)
+        ax.axis('off')
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
+    fig.savefig('{}/{}.png'.format(path, name))
+    plt.close(fig)
+    print('{}.png saved'.format(name))
+
+    # plot figs
     image_list = []
     for i in range(seq_len):
         # minus represents the time before current moment
@@ -99,28 +82,16 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
             str_min = str(6 * (i - seq_len + 1))
         else:
             str_min = str(6 * (i + 1))
-        file_path = '{}/{}_{}.jpg'.format(path, name, str_min)
+        file_path = '{}/{}_{}.png'.format(path, name, str_min)
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
-        plot_single_fig(np.flip(tensor[0, i, 0], axis=0), file_path, time_str, cmap, norm)
+        plot_single_fig(np.flip(tensor[0, i, 0], axis=0), file_path, time_str, CMAP, NORM)
+        print('{}_{}.png saved'.format(name, str_min))
         image_list.append(imageio.imread(file_path))
 
-    # plot the long image
-    num_rows = 2 if seq_len > 10 else 1
-    num_cols = seq_len // num_rows
-    fig = plt.figure(figsize=(num_cols, num_rows), dpi=120)
-    for i in range(seq_len):
-        ax = fig.add_subplot(num_rows, num_cols, i + 1)
-        ax.imshow(np.flip(tensor[0, i, 0], axis=0), cmap=cmap, norm=norm)
-        ax.axis('off')
-    
-    fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
-    fig.savefig('{}/{}.jpg'.format(path, name))
-    plt.close(fig)
-    
     # make gif
     imageio.mimsave('{}/{}.gif'.format(path, name), image_list, 'GIF', duration=0.2)
-    print('{} saved'.format(name))
+    print('{}.gif saved'.format(name))
 
 
 def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str, 
@@ -207,6 +178,6 @@ def plot_psd(pred: torch.Tensor, truth: torch.Tensor, root: str, stage: str):
     ax2.set_ylabel('Power Spectral Density of Y axis', fontsize=12)
     ax2.legend(['Prediction', 'Observation'])
 
-    fig.savefig('{}/{}_psd.jpg'.format(root, stage), bbox_inches='tight')
+    fig.savefig('{}/{}_psd.png'.format(root, stage), bbox_inches='tight')
     plt.close(fig)
     print('PSD saved')
