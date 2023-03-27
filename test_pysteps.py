@@ -166,7 +166,6 @@ def predict(case_loader: DataLoader):
         pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
         pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
-        tensors = (pred, truth, input_)
     
         # Save metrics
         metrics = {}
@@ -190,9 +189,19 @@ def predict(case_loader: DataLoader):
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures
-        visualizer.save_tensors(tensors, timestamp, args.output_path, 'case_{}'.format(i))
+        visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
+                               args.output_path, 'case_{}'.format(i), 'input')
+        visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                               args.output_path, 'case_{}'.format(i), 'truth')
+        visualizer.save_tensor(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                               args.output_path, 'case_{}'.format(i), 'pred')
         print('Tensors saved')
-        visualizer.plot_maps(tensors, timestamp, args.output_path, 'case_{}'.format(i))
+        visualizer.plot_figs(input_, timestamp[:, :args.input_steps],
+                             args.output_path, 'case_{}'.format(i), 'input')
+        visualizer.plot_figs(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                             args.output_path, 'case_{}'.format(i), 'truth')
+        visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                             args.output_path, 'case_{}'.format(i), 'pred')
         print('Figures saved')
     
     print('\nPrediction complete')
