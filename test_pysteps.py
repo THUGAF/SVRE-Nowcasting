@@ -13,7 +13,6 @@ import utils.dataloader as dataloader
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.transform as transform
-from utils.trainer import HiddenPrints
 
 
 parser = argparse.ArgumentParser(description='PySTEPS Basline')

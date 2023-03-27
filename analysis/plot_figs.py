@@ -1,4 +1,6 @@
 import os
+import sys
+sys.path.append(os.getcwd())
 import numpy as np
 import pandas as pd
 import torch
@@ -104,25 +106,25 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
 
 
 def plot_psd_ablation(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_ablation_sample_0_x.jpg', 'img/psd_ablation_sample_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_ablation_sample_1_x.jpg', 'img/psd_ablation_sample_1_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_0', 'img/psd_ablation_case_0_x.jpg', 'img/psd_ablation_case_0_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_1', 'img/psd_ablation_case_1_x.jpg', 'img/psd_ablation_case_1_y.jpg')
 
 
 def plot_psd_comparison(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'sample_0', 'img/psd_comparison_sample_0_x.jpg', 'img/psd_comparison_sample_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'sample_1', 'img/psd_comparison_sample_1_x.jpg', 'img/psd_comparison_sample_1_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_0', 'img/psd_comparison_case_0_x.jpg', 'img/psd_comparison_case_0_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_1', 'img/psd_comparison_case_1_x.jpg', 'img/psd_comparison_case_1_y.jpg')
 
 
 def plot_all(model_names, model_dirs):
-    plot_maps(model_names, model_dirs, 'sample_0', 'img/vis_sample_0.jpg')
-    plot_maps(model_names, model_dirs, 'sample_1', 'img/vis_sample_1.jpg')
+    plot_maps(model_names, model_dirs, 'case_0', 'img/vis_case_0.jpg')
+    plot_maps(model_names, model_dirs, 'case_1', 'img/vis_case_1.jpg')
 
 
 if __name__ == '__main__':
     plot_psd_ablation(['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], ['results/AttnUNet',
-                      'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
+                      'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
     plot_psd_comparison(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE'], ['results/PySTEPS',
-                        'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet_GASVRE'])
+                        'results/SmaAt_UNet', 'results/MotionRNN', 'results/AGAN_SVRE'])
     plot_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
              ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
-              'results/AttnUNet_SVRE', 'results/AttnUNet_GA', 'results/AttnUNet_GASVRE'])
+              'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
