@@ -78,18 +78,6 @@ def evaluate_rmse(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     return rmses
 
 
-def evaluate_kld(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
-    assert pred.size() == truth.size()
-    pred, truth = pred.cpu(), truth.cpu()
-    seq_len = pred.size(1)
-    klds = np.zeros(seq_len)
-    for s in range(seq_len):
-        pred_batch_flatten, truth_batch_flatten = pred[:, s].flatten(start_dim=1), truth[:, s].flatten(start_dim=1)
-        pred_batch_flatten, truth_batch_flatten = pred_batch_flatten.softmax(dim=-1), truth_batch_flatten.softmax(dim=-1)
-        klds[s] = F.kl_div(pred_batch_flatten.log(), truth_batch_flatten, reduction='batchmean')
-    return klds
-
-
 def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     assert pred.size() == truth.size()
     pred, truth = pred.cpu(), truth.cpu()
@@ -100,3 +88,17 @@ def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
     for s in range(seq_len):
         ssims[s] = ssim.ssim(pred[:, s], truth[:, s])
     return ssims
+
+
+def evaluate_jsd(pred: torch.Tensor, truth: torch.Tensor) -> np.ndarray:
+    assert pred.size() == truth.size()
+    pred, truth = pred.cpu(), truth.cpu()
+    seq_len = pred.size(1)
+    jsds = np.zeros(seq_len)
+    for s in range(seq_len):
+        pred_batch_flatten, truth_batch_flatten = pred[:, s].flatten(start_dim=1), truth[:, s].flatten(start_dim=1)
+        pred_batch_flatten, truth_batch_flatten = pred_batch_flatten.softmax(dim=1), truth_batch_flatten.softmax(dim=1)
+        log_mean_batch_flatten = ((pred_batch_flatten + truth_batch_flatten) / 2).log()
+        jsds[s] = 0.5 * F.kl_div(log_mean_batch_flatten, truth_batch_flatten, reduction='batchmean') + \
+            0.5 * F.kl_div(log_mean_batch_flatten, pred_batch_flatten, reduction='batchmean')
+    return jsds
