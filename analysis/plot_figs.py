@@ -16,8 +16,8 @@ plt.rcParams['font.sans-serif'] = 'Arial'
 
 def plot_maps(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
-    input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))
-    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))
+    input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))[0]
+    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
     input_ = np.flip(input_[0, -1, 0].numpy(), axis=0)
     truth = np.flip(truth[0, -1, 0].numpy(), axis=0)
     
@@ -29,7 +29,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
             tensor = truth
             title = 'Observation (+60 min)'
         else:
-            pred = torch.load(os.path.join(model_dirs[i - 1], stage, 'pred', 'pred.pt'))
+            pred = torch.load(os.path.join(model_dirs[i - 1], stage, 'pred', 'pred.pt'))[0]
             tensor = np.flip(pred[0, -1, 0].numpy(), axis=0)
             title = model_names[i - 1]
         ax.set_extent(AREA, crs=ccrs.PlateCarree())

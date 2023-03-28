@@ -2,39 +2,6 @@
 
 This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
-## SVRE method
-
-![SVRE](img/SVRE.png)
-
-## Architecture of AGAN
-
-Generator
-![Generator](img/Generator.jpg)
-
-Discriminator
-![Discriminator](img/Discriminator_v2.jpg)
-
-Scaling blocks
-
-<img src=img/DownBlock.jpg width=400> <img src=img/UpBlock.jpg width=400>
-
-## Study Area
-
-![StudyArea](img/map.png)
-
-## Performance overview
-
-![Vis1](img/vis_sample_0.jpg)
-![Vis2](img/vis_sample_1.jpg)
-
-<img src=img/taylor_ablation_sample_0.jpg width=400> <img src=img/taylor_comparison_sample_0.jpg width=400>
-
-<img src=img/taylor_ablation_sample_1.jpg width=400> <img src=img/taylor_comparison_sample_1.jpg width=400>
-
-<img src=img/psd_ablation_sample_0_x.jpg width=400> <img src=img/psd_ablation_sample_0_y.jpg width=400> <img src=img/psd_comparison_sample_0_x.jpg width=400> <img src=img/psd_comparison_sample_0_y.jpg width=400>
-
-<img src=img/psd_ablation_sample_1_x.jpg width=400> <img src=img/psd_ablation_sample_1_y.jpg width=400> <img src=img/psd_comparison_sample_1_x.jpg width=400> <img src=img/psd_comparison_sample_1_y.jpg width=400>
-
 ## Dependencies
 
 Since the codes are based on Python, you need to install Python 3.8 first. The following dependencies are also needed.
