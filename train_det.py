@@ -328,7 +328,7 @@ def test(model: nn.Module, test_loader: DataLoader):
     metrics['MAE'] = 0
     metrics['RMSE'] = 0
     metrics['SSIM'] = 0
-    metrics['KLD'] = 0
+    metrics['JSD'] = 0
 
     # Test
     print('\n[Test]')
@@ -367,7 +367,7 @@ def test(model: nn.Module, test_loader: DataLoader):
         metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
         metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
         metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-        metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
+        metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
     
     # Print time
     print('Time: {:.4f}'.format(time.time() - test_timer))
@@ -419,7 +419,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
         metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
         metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
-        metrics['KLD'] = evaluation.evaluate_kld(pred, truth)
+        metrics['JSD'] = evaluation.evaluate_jsd(pred, truth)
         
         # Save metrics
         df = pd.DataFrame(data=metrics)
@@ -441,6 +441,7 @@ def predict(model: nn.Module, case_loader: DataLoader):
                              args.output_path, 'case_{}'.format(i), 'truth')
         visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
                              args.output_path, 'case_{}'.format(i), 'pred')
+        visualizer.plot_psd(pred, truth, args.output_path, 'case_{}'.format(i))
         print('Figures saved')
     
     print('\nPrediction complete')

@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.nn.utils import clip_grad_value_
+from torch.nn.utils import clip_grad_norm_
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.transform as transform
@@ -282,7 +282,7 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
             loss_d = d_loss(fake_score, real_score)
             optimizer_d.zero_grad()
             loss_d.backward()
-            clip_grad_value_(discriminator.parameters(), 1)
+            clip_grad_norm_(discriminator.parameters(), max_norm=0.01 / (epoch + 1))
             optimizer_d.step()
 
             # Generator backward propagation
@@ -405,7 +405,7 @@ def test(generator: nn.Module, test_loader: DataLoader):
     metrics['MAE'] = 0
     metrics['RMSE'] = 0
     metrics['SSIM'] = 0
-    metrics['KLD'] = 0
+    metrics['JSD'] = 0
 
     # Test
     print('\n[Test]')
@@ -429,12 +429,6 @@ def test(generator: nn.Module, test_loader: DataLoader):
             pred_norm = generator(input_norm)
             pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
 
-            # Record and print time
-            if (i + 1) % args.display_interval == 0:
-                print('Batch: [{}][{}]\tTime: {:.4f}'.format(
-                    i + 1, len(test_loader), time.time() - test_batch_timer))
-                test_batch_timer = time.time()
-
             # Evaluation       
             for threshold in args.thresholds:
                 pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
@@ -445,7 +439,13 @@ def test(generator: nn.Module, test_loader: DataLoader):
             metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
             metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
             metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-            metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
+            metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
+        
+        # Record and print time
+        if (i + 1) % args.display_interval == 0:
+            print('Batch: [{}][{}]\tTime: {:.4f}'.format(
+                i + 1, len(test_loader), time.time() - test_batch_timer))
+            test_batch_timer = time.time()
     
     # Print time
     print('Time: {:.4f}'.format(time.time() - test_timer))
@@ -473,7 +473,7 @@ def predict(generator: nn.Module, case_loader: DataLoader):
     metrics['MAE'] = 0
     metrics['RMSE'] = 0
     metrics['SSIM'] = 0
-    metrics['KLD'] = 0
+    metrics['JSD'] = 0
 
     # Predict
     print('\n[Predict]')
@@ -509,7 +509,7 @@ def predict(generator: nn.Module, case_loader: DataLoader):
             metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
             metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
             metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-            metrics['KLD'] += evaluation.evaluate_kld(pred, truth)
+            metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
             
         # Save metrics
         for key in metrics.keys():
@@ -536,6 +536,7 @@ def predict(generator: nn.Module, case_loader: DataLoader):
         for n, pred in enumerate(preds):
             visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
                                 args.output_path, 'case_{}'.format(i), 'pred_{}'.format(n))
+        visualizer.plot_psd(pred, truth, args.output_path, 'case_{}'.format(i))
         print('Figures saved')
     
     print('\nPrediction complete')
