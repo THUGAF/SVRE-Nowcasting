@@ -21,26 +21,11 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
         misses[s] = torch.sum(stat == 2).item()                 # truth > th & pred < th
         false_alarms[s] = torch.sum(stat == 1).item()           # truth < th & pred > th
         correct_rejections[s] = torch.sum(stat == 0).item()     # truth < th & pred < th
-
     return hits, misses, false_alarms, correct_rejections
 
 
 def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, eps: float = 1e-4) \
     -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    r"""To calculate POD, FAR, CSI for the prediction at each time step.
-    
-    Args:
-        pred (torch.Tensor): The prediction sequence in tensor form with 5D shape `(B, L, C, H, W)`.
-        truth (torch.Tensor): The ground truth sequence in tensor form with 5D shape `(B, L, C, H, W)`.
-        threshold (float): The threshold of POD, FAR, CSI. Range: (0, 1).
-        eps (float, optional): To avoid divided by zero. Default: 1e-4.
-    
-    Return:
-        numpy.ndarray: POD at each time step.
-        numpy.ndarray: FAR at each time step.
-        numpy.ndarray: CSI at each time step.
-    """
-
     h, m, f, c = _count(pred, truth, threshold)
     pod = h / (h + m + eps)
     far = f / (h + f + eps)
