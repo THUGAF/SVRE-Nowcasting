@@ -23,11 +23,17 @@ CENTER_LON, CENTER_LAT = 116.47195, 39.808887
 CENTER_UTM_X, CENTER_UTM_Y = TRANS_WGS84_TO_UTM.transform(CENTER_LAT, CENTER_LON)
 LEFT_BOTTOM_LAT, LEFT_BOTTOM_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X - 128000, CENTER_UTM_Y - 64000)
 RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X + 128000, CENTER_UTM_Y + 192000)
-AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
+STUDY_AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
+X = np.arange(-400000, 401000, 1000)
+Y = np.arange(-400000, 401000, 1000)
+UTM_X, UTM_Y = CENTER_UTM_X + X, CENTER_UTM_Y + Y
+X_RANGE = [272, 528]
+Y_RANGE = [336, 592]
 CMAP = pcolors.ListedColormap(['#ffffff', '#2aedef', '#1caff4', '#0a22f4', '#29fd2f',
                                '#1ec722', '#139116', '#fffd38', '#e7bf2a', '#fb9124',
                                '#f90f1c', '#d00b15', '#bd0713', '#da66fb', '#bb24eb'])
 NORM = pcolors.BoundaryNorm(np.linspace(0.0, 75.0, 16), CMAP.N)
+plt.rcParams['font.sans-serif'] = 'Arial'
 
 
 def save_tensor(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: str, name: str):
@@ -59,15 +65,16 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
     if not os.path.exists(path):
         os.mkdir(path)
     tensor = tensor.detach().cpu().numpy()
-    seq_len = tensor.shape[1]
+    tensor = tensor[0, :, 0]
+    seq_len = tensor.shape[0]
 
     # plot long fig
     num_rows = 2 if seq_len > 10 else 1
     num_cols = seq_len // num_rows
-    fig = plt.figure(figsize=(num_cols, num_rows), dpi=120)
+    fig = plt.figure(figsize=(num_cols, num_rows), dpi=300)
     for i in range(seq_len):
         ax = fig.add_subplot(num_rows, num_cols, i + 1)
-        ax.imshow(np.flip(tensor[0, i, 0], axis=0), cmap=CMAP, norm=NORM)
+        ax.pcolormesh(tensor[i], cmap=CMAP, norm=NORM)
         ax.axis('off')
     fig.subplots_adjust(left=0, right=1, bottom=0, top=1, wspace=0, hspace=0)
     fig.savefig('{}/{}.png'.format(path, name))
@@ -85,7 +92,7 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
         file_path = '{}/{}_{}.png'.format(path, name, str_min)
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
-        plot_single_fig(np.flip(tensor[0, i, 0], axis=0), file_path, time_str, CMAP, NORM)
+        plot_single_fig(tensor[i], file_path, time_str, CMAP, NORM)
         print('{}_{}.png saved'.format(name, str_min))
         image_list.append(imageio.imread(file_path))
 
@@ -96,30 +103,29 @@ def plot_figs(tensor: torch.Tensor, timestamp: torch.Tensor, root: str, stage: s
 
 def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str, 
                     cmap: pcolors.ListedColormap, norm: pcolors.BoundaryNorm):
-    fig = plt.figure(figsize=(8, 8), dpi=120)
-    ax = plt.subplot(1, 1, 1, projection=ccrs.Mercator())
-    ax.set_title(time_str, fontsize=16, loc='right')
-    ax.set_title('Composite Reflectivity', fontsize=16, loc='left')
-    ax.set_extent(AREA, crs=ccrs.PlateCarree())
+    fig = plt.figure(figsize=(8, 8), dpi=150)
+    ax = plt.subplot(1, 1, 1, projection=ccrs.UTM(50))
+    ax.set_title(time_str, fontsize=14, loc='right')
+    ax.set_title('Composite Reflectivity', fontsize=14, loc='left')
     ax.coastlines()
     ax.add_feature(cfeature.BORDERS)
     ax.add_feature(cfeature.STATES)
+    ax.pcolormesh(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
+                  tensor, cmap=cmap, norm=norm, transform=ccrs.UTM(50))
 
-    ax.imshow(tensor, cmap=cmap, norm=norm, extent=AREA, transform=ccrs.PlateCarree())
-
-    xticks = np.arange(np.ceil(AREA[0]), np.ceil(AREA[1]))
-    yticks = np.arange(np.ceil(AREA[2]), np.ceil(AREA[3]))
-    ax.set_xticks(xticks, crs=ccrs.PlateCarree())
-    ax.set_yticks(yticks, crs=ccrs.PlateCarree())
-    ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=False, 
-                 linewidth=1, linestyle=':', color='k', alpha=0.8)
+    xticks = np.arange(np.ceil(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]))
+    yticks = np.arange(np.ceil(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]))
+    gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
+                      linewidth=1, linestyle=':', color='k', alpha=0.8)
+    gl.top_labels = False
+    gl.right_labels = False
     ax.xaxis.set_major_formatter(LongitudeFormatter())
     ax.yaxis.set_major_formatter(LatitudeFormatter())
     ax.tick_params(labelsize=12)
     ax.set_aspect('equal')
 
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), pad=0.05, shrink=0.7, aspect=40)
-    cbar.set_label('dBZ', fontsize=14)
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), pad=0.05, shrink=0.7, aspect=30)
+    cbar.set_label('dBZ', fontsize=12)
     cbar.ax.tick_params(labelsize=11)
 
     fig.savefig(file_path, bbox_inches='tight')
