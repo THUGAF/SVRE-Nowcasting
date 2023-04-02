@@ -124,7 +124,7 @@ def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str,
     ax.tick_params(labelsize=12)
     ax.set_aspect('equal')
 
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), pad=0.05, shrink=0.7, aspect=30)
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax, pad=0.05, shrink=0.7, aspect=30)
     cbar.set_label('dBZ', fontsize=12)
     cbar.ax.tick_params(labelsize=11)
 
