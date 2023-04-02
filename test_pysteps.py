@@ -89,8 +89,8 @@ def main(args):
 
 @torch.no_grad()
 def test(test_loader: DataLoader):
+    # Init metric dict
     metrics = {}
-    metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
     for threshold in args.thresholds:
         metrics['POD_{:.1f}'.format(threshold)] = 0
         metrics['FAR_{:.1f}'.format(threshold)] = 0
@@ -143,32 +143,29 @@ def test(test_loader: DataLoader):
 
     # Save metrics
     for key in metrics.keys():
-        if key != 'Time':
-            metrics[key] /= len(test_loader)
-    df = pd.DataFrame(data=metrics)
+        metrics[key] /= len(test_loader)
+    df = pd.DataFrame(data=metrics, index=[0])
     df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
               float_format='%.6f', index=False)
     print('Test metrics saved')
 
 
 @torch.no_grad()
-def predict(case_loader: DataLoader):    
+def predict(case_loader: DataLoader):
+    # Init metric dict
+    metrics = {}
     # predict
     print('\n[Predict]')
     for i, (tensor, timestamp) in enumerate(case_loader):
         tensor = tensor.to(args.device)
         input_ = tensor[:, :args.input_steps]
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
-
         input_pysteps = input_[0, :, 0].numpy()
         velocity = DARTS(input_pysteps)
         pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
         pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
     
-        # Save metrics
-        metrics = {}
-        metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
         # Evaluation
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
@@ -182,7 +179,7 @@ def predict(case_loader: DataLoader):
         truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['JSD'] = evaluation.evaluate_jsd(pred, truth)
-        df = pd.DataFrame(data=metrics)
+        df = pd.DataFrame(data=metrics, index=[0])
         df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), 
                   float_format='%.6f', index=False)
         print('Case {} metrics saved'.format(i))

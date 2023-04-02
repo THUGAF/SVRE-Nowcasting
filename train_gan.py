@@ -11,7 +11,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torch.nn.utils import clip_grad_norm_
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.transform as transform
@@ -33,7 +32,7 @@ parser.add_argument('--valid-ratio', type=float, default=0.1)
 parser.add_argument('--case-indices', type=int, nargs='+', default=[0])
 
 # model settings
-parser.add_argument('--num-ensembles', type=int, default=4)
+parser.add_argument('--num-ensembles', type=int, default=6)
 
 # training settings
 parser.add_argument('--pretrain', action='store_true')
@@ -211,6 +210,13 @@ def g_loss(fake_score: torch.Tensor, loss_func: nn.Module = nn.MSELoss()) -> tor
     return g_loss
 
 
+def clip_weight(model: nn.Module, max_weight: float):
+    for name, params in model.named_parameters():
+        if 'weight' in name:
+            params = torch.clip(params, max=max_weight)
+            setattr(model, name, params)
+
+
 def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Optimizer, 
           optimizer_d: optim.Optimizer, train_loader: DataLoader, val_loader: DataLoader):
     # Pretrain
@@ -282,8 +288,8 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
             loss_d = d_loss(fake_score, real_score)
             optimizer_d.zero_grad()
             loss_d.backward()
-            clip_grad_norm_(discriminator.parameters(), max_norm=0.01 / (epoch + 1))
             optimizer_d.step()
+            clip_weight(discriminator, 0.01)
 
             # Generator backward propagation
             fake_scores = [discriminator(torch.cat([input_norm, pred_norm], dim=1)) 
@@ -346,9 +352,8 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
                 loss_g = g_loss(fake_score) + \
                     args.weight_svre * svre_loss(pred_norm, truth_norm) + \
                     args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin)
-                
                 pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
-                score = evaluation.evaluate_forecast(pred, truth, args.thresholds[-1])[2].mean()
+                score = evaluation.evaluate_forecast(pred, truth, args.thresholds[-1])[2]
 
                 # Record and print loss
                 val_loss_g_epoch += loss_g.item()
@@ -396,7 +401,6 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
 def test(generator: nn.Module, test_loader: DataLoader):
     # Init metric dict
     metrics = {}
-    metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
     for threshold in args.thresholds:
         metrics['POD_{:.1f}'.format(threshold)] = 0
         metrics['FAR_{:.1f}'.format(threshold)] = 0
@@ -452,9 +456,8 @@ def test(generator: nn.Module, test_loader: DataLoader):
 
     # Save metrics
     for key in metrics.keys():
-        if key != 'Time':
-            metrics[key] = metrics[key] / len(test_loader) / args.num_ensembles
-    df = pd.DataFrame(data=metrics)
+        metrics[key] = metrics[key] / len(test_loader) / args.num_ensembles
+    df = pd.DataFrame(data=metrics, index=[0])
     df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
               float_format='%.6f', index=False)
     print('Test metrics saved')
@@ -464,7 +467,6 @@ def test(generator: nn.Module, test_loader: DataLoader):
 def predict(generator: nn.Module, case_loader: DataLoader):
     # Init metric dict
     metrics = {}
-    metrics['Time'] = np.arange(1, args.forecast_steps + 1) * args.resolution
     for threshold in args.thresholds:
         metrics['POD_{:.1f}'.format(threshold)] = 0
         metrics['FAR_{:.1f}'.format(threshold)] = 0
@@ -513,29 +515,27 @@ def predict(generator: nn.Module, case_loader: DataLoader):
             
         # Save metrics
         for key in metrics.keys():
-            if key != 'Time':
-                metrics[key] = metrics[key] / args.num_ensembles
-        df = pd.DataFrame(data=metrics)
+            metrics[key] = metrics[key] / args.num_ensembles
+        df = pd.DataFrame(data=metrics, index=[0])
         df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), 
                   float_format='%.6f', index=False)
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures
+        pred = torch.mean(torch.stack(preds))
         visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
                                args.output_path, 'case_{}'.format(i), 'input')
         visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
                                args.output_path, 'case_{}'.format(i), 'truth')
-        for n, pred in enumerate(preds):
-            visualizer.save_tensor(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                                args.output_path, 'case_{}'.format(i), 'pred_{}'.format(n))
+        visualizer.save_tensor(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                               args.output_path, 'case_{}'.format(i), 'pred')
         print('Tensors saved')
         visualizer.plot_figs(input_, timestamp[:, :args.input_steps],
                              args.output_path, 'case_{}'.format(i), 'input')
         visualizer.plot_figs(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
                              args.output_path, 'case_{}'.format(i), 'truth')
-        for n, pred in enumerate(preds):
-            visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                                args.output_path, 'case_{}'.format(i), 'pred_{}'.format(n))
+        visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
+                             args.output_path, 'case_{}'.format(i), 'pred')
         visualizer.plot_psd(pred, truth, args.output_path, 'case_{}'.format(i))
         print('Figures saved')
     
