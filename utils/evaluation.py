@@ -62,7 +62,7 @@ def evaluate_ssim(pred: torch.Tensor, truth: torch.Tensor) -> float:
     pred, truth = pred.mean(dim=1), truth.mean(dim=1)
     pred, truth = transform.convert_to_gray(pred), transform.convert_to_gray(truth)
     pred, truth = pred.float(), truth.float()
-    ssim_ = ssim.ssim(pred, truth)
+    ssim_ = ssim.ssim(pred, truth).item()
     return ssim_
 
 
@@ -75,4 +75,5 @@ def evaluate_jsd(pred: torch.Tensor, truth: torch.Tensor) -> float:
     log_mean_batch_flatten = ((pred_batch_flatten + truth_batch_flatten) / 2).log()
     jsd = 0.5 * F.kl_div(log_mean_batch_flatten, truth_batch_flatten, reduction='batchmean') + \
         0.5 * F.kl_div(log_mean_batch_flatten, pred_batch_flatten, reduction='batchmean')
+    jsd = jsd.item()
     return jsd

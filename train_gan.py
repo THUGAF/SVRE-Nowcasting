@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.nn.utils import clip_grad_norm_
 import utils.visualizer as visualizer
 import utils.evaluation as evaluation
 import utils.transform as transform
@@ -211,10 +212,10 @@ def g_loss(fake_score: torch.Tensor, loss_func: nn.Module = nn.MSELoss()) -> tor
 
 
 def clip_weight(model: nn.Module, max_weight: float):
-    for name, params in model.named_parameters():
+    for name, param in model.named_parameters():
         if 'weight' in name:
-            params = torch.clip(params, max=max_weight)
-            setattr(model, name, params)
+            param = torch.clip(param, max=max_weight)
+            setattr(model, name, param)
 
 
 def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Optimizer, 
@@ -289,7 +290,7 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
             optimizer_d.zero_grad()
             loss_d.backward()
             optimizer_d.step()
-            clip_weight(discriminator, 0.01)
+            clip_grad_norm_(discriminator.parameters(), 1e-4)
 
             # Generator backward propagation
             fake_scores = [discriminator(torch.cat([input_norm, pred_norm], dim=1)) 
@@ -522,7 +523,7 @@ def predict(generator: nn.Module, case_loader: DataLoader):
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures
-        pred = torch.mean(torch.stack(preds))
+        pred = torch.mean(torch.stack(preds), dim=0)
         visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
                                args.output_path, 'case_{}'.format(i), 'input')
         visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],

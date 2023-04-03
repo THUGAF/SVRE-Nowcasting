@@ -23,7 +23,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     num_subplot = len(model_names) + 1
     fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=600)
     for i in range(num_subplot):
-        ax = fig.add_subplot(2, num_subplot // 2, i + 1, projection=ccrs.Mercator())
+        ax = fig.add_subplot(2, num_subplot // 2, i + 1, projection=ccrs.UTM(50))
         if i == 0:
             tensor = truth
             title = 'Observation (+60 min)'
@@ -41,6 +41,8 @@ def plot_maps(model_names, model_dirs, stage, img_path):
         yticks = np.arange(np.ceil(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]))
         gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
                           linewidth=1, linestyle=':', color='k', alpha=0.8)
+        gl.xlabel_style = {'size': 12}
+        gl.ylabel_style = {'size': 12}
         gl.top_labels = False
         gl.right_labels = False
         ax.xaxis.set_major_formatter(LongitudeFormatter())
@@ -107,7 +109,7 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
 def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path: str, 
                         std_range: tuple = (0, 1), std_num: int = 6):
     fig = plt.figure(figsize=(4, 4), dpi=600)
-    truth = torch.load(os.path.join(model_names, model_dirs[0], stage, 'truth', 'truth.pt'))
+    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
     truth_60min = truth[0, -1, 0].numpy()
     ref_std_60min = np.std(truth_60min)
     taylor_diagram_60min = TaylorDiagram(ref_std_60min, fig, rect=111, 
@@ -124,7 +126,7 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
     # Add scatters
     markers = ['o', '^', 'p', 'd']
     for i, model_dir in enumerate(model_dirs):
-        pred = torch.load(os.path.join(model_names, model_dir, stage, 'pred', 'pred.pt'))
+        pred = torch.load(os.path.join(model_dir, stage, 'pred', 'pred.pt'))[0]
         pred_60min = pred[0, -1, 0].numpy()
         stddev_60min = np.std(pred_60min)
         corrcoef_60min = np.corrcoef(truth_60min.flatten(), pred_60min.flatten())[0, 1]
@@ -134,7 +136,7 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
     # Add a figure legend
     taylor_diagram_60min.ax.legend(taylor_diagram_60min.samplePoints,
                                    [p.get_label() for p in taylor_diagram_60min.samplePoints],
-                                   numpoints=1, fontsize='small', bbox_to_anchor=(1.05, 1.05))
+                                   numpoints=1, fontsize='small', bbox_to_anchor=(1.1, 1.1))
     
     # Add title
     fig.tight_layout()

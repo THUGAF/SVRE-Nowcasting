@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=3 \
 nohup python -u train_det.py \
     --train \
     --test \
@@ -8,7 +8,7 @@ nohup python -u train_det.py \
     --model MotionRNN \
     --max-iterations 100000 \
     --early-stopping \
-    --batch-size 8 \
+    --batch-size 1 \
     --learning-rate 1e-4 \
     --weight-decay 1e-2 \
     --weight-recon 10 \
