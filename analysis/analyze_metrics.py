@@ -32,9 +32,9 @@ def analyze_ablation_metrics():
     case_0_metrics = concat_model_metrics(case_0_metrics)
     case_1_metrics = concat_model_metrics(case_1_metrics)
     with pd.ExcelWriter('results/metrics_ablation.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
-        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4g')
-        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4g')
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
+        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
+        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
 
 
 def analyze_comparison_metrics():
@@ -47,9 +47,9 @@ def analyze_comparison_metrics():
     case_0_metrics = concat_model_metrics(case_0_metrics)
     case_1_metrics = concat_model_metrics(case_1_metrics)
     with pd.ExcelWriter('results/metrics_comparison.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4g')
-        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4g')
-        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4g')
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
+        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
+        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
 
 
 if __name__ == '__main__':

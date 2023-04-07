@@ -37,8 +37,8 @@ def plot_maps(model_names, model_dirs, stage, img_path):
         ax.pcolormesh(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
                       tensor, cmap=CMAP, norm=NORM, transform=ccrs.UTM(50))
 
-        xticks = np.arange(np.ceil(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]))
-        yticks = np.arange(np.ceil(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]))
+        xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 0.5)
+        yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 0.5)
         gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
                           linewidth=1, linestyle=':', color='k', alpha=0.8)
         gl.xlabel_style = {'size': 12}

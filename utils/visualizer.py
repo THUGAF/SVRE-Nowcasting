@@ -15,18 +15,17 @@ from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 
 
 # Coordinate transformation
-TRANS_WGS84_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:32650')
-TRANS_UTM_TO_WGS84 = pyproj.Transformer.from_crs('epsg:32650', 'epsg:4326')
+TRANS_LONLAT_TO_UTM = pyproj.Transformer.from_crs('epsg:4326', 'epsg:32650')
+TRANS_UTM_TO_LONLAT = pyproj.Transformer.from_crs('epsg:32650', 'epsg:4326')
 
 # Global information
 CENTER_LON, CENTER_LAT = 116.47195, 39.808887
-CENTER_UTM_X, CENTER_UTM_Y = TRANS_WGS84_TO_UTM.transform(CENTER_LAT, CENTER_LON)
-LEFT_BOTTOM_LAT, LEFT_BOTTOM_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X - 128000, CENTER_UTM_Y - 64000)
-RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_WGS84.transform(CENTER_UTM_X + 128000, CENTER_UTM_Y + 192000)
+CENTER_UTM_X, CENTER_UTM_Y = TRANS_LONLAT_TO_UTM.transform(CENTER_LAT, CENTER_LON)
+LEFT_BOTTOM_LAT, LEFT_BOTTOM_LON = TRANS_UTM_TO_LONLAT.transform(CENTER_UTM_X - 128000, CENTER_UTM_Y - 64000)
+RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_LONLAT.transform(CENTER_UTM_X + 128000, CENTER_UTM_Y + 192000)
 STUDY_AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
-X = np.arange(-400000, 401000, 1000)
-Y = np.arange(-400000, 401000, 1000)
-UTM_X, UTM_Y = CENTER_UTM_X + X, CENTER_UTM_Y + Y
+UTM_X = CENTER_UTM_X + np.arange(-400000, 401000, 1000)
+UTM_Y = CENTER_UTM_Y + np.arange(-400000, 401000, 1000)
 X_RANGE = [272, 528]
 Y_RANGE = [336, 592]
 CMAP = pcolors.ListedColormap(['#ffffff', '#2aedef', '#1caff4', '#0a22f4', '#29fd2f',
@@ -113,8 +112,8 @@ def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str,
     ax.pcolormesh(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
                   tensor, cmap=cmap, norm=norm, transform=ccrs.UTM(50))
 
-    xticks = np.arange(np.ceil(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]))
-    yticks = np.arange(np.ceil(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]))
+    xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 0.5)
+    yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 0.5)
     gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
                       linewidth=1, linestyle=':', color='k', alpha=0.8)
     gl.top_labels = False
@@ -124,7 +123,7 @@ def plot_single_fig(tensor: torch.Tensor, file_path: str, time_str: str,
     ax.tick_params(labelsize=12)
     ax.set_aspect('equal')
 
-    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax, pad=0.05, shrink=0.7, aspect=30)
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=cmap, norm=norm), ax=ax, shrink=0.7, aspect=30)
     cbar.set_label('dBZ', fontsize=12)
     cbar.ax.tick_params(labelsize=11)
 
