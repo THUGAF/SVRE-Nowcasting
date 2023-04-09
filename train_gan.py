@@ -211,10 +211,10 @@ def g_loss(fake_score: torch.Tensor, loss_func: nn.Module = nn.MSELoss()) -> tor
     return g_loss
 
 
-def clip_weight(model: nn.Module, max_weight: float):
+def clip_weight(model: nn.Module, bound: float):
     for name, param in model.named_parameters():
         if 'weight' in name:
-            param = torch.clip(param, max=max_weight)
+            param = torch.clip(param, max=bound, min=-bound)
             setattr(model, name, param)
 
 
@@ -289,8 +289,9 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
             loss_d = d_loss(fake_score, real_score)
             optimizer_d.zero_grad()
             loss_d.backward()
+            clip_grad_norm_(discriminator.parameters(), 1e-3)
             optimizer_d.step()
-            clip_grad_norm_(discriminator.parameters(), 1e-4)
+            clip_weight(discriminator, 1e-3)
 
             # Generator backward propagation
             fake_scores = [discriminator(torch.cat([input_norm, pred_norm], dim=1)) 
