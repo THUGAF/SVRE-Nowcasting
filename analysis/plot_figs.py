@@ -59,6 +59,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
 
     fig.savefig(img_path, bbox_inches='tight')
     print('{} saved'.format(img_path))
+    plt.close(fig)
 
 
 def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
@@ -104,6 +105,8 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     fig2.savefig(img_path_2, bbox_inches='tight')
     print('{} saved'.format(img_path_1))
     print('{} saved'.format(img_path_2))
+    plt.close(fig1)
+    plt.close(fig2)
 
 
 def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path: str, 
@@ -139,33 +142,34 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
                                    numpoints=1, fontsize='small', bbox_to_anchor=(1.1, 1.1))
     
     # Add title
-    fig.tight_layout()
+    fig.set_tight_layout(True)
     fig.savefig(img_path)
+    plt.close(fig)
 
 
 def plot_psd_ablation(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'case_0', 'img/psd_ablation_case_0_x.jpg', 'img/psd_ablation_case_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'case_1', 'img/psd_ablation_case_1_x.jpg', 'img/psd_ablation_case_1_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_0', 'results/img/psd_ablation_case_0_x.jpg', 'results/img/psd_ablation_case_0_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_1', 'results/img/psd_ablation_case_1_x.jpg', 'results/img/psd_ablation_case_1_y.jpg')
 
 
 def plot_psd_comparison(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'case_0', 'img/psd_comparison_case_0_x.jpg', 'img/psd_comparison_case_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'case_1', 'img/psd_comparison_case_1_x.jpg', 'img/psd_comparison_case_1_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_0', 'results/img/psd_comparison_case_0_x.jpg', 'results/img/psd_comparison_case_0_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_1', 'results/img/psd_comparison_case_1_x.jpg', 'results/img/psd_comparison_case_1_y.jpg')
 
 
 def plot_taylor_diagram_ablation(model_names, model_dirs):
-    plot_taylor_diagram(model_names, model_dirs, 'case_0', 'img/taylor_ablation_case_0.jpg')
-    plot_taylor_diagram(model_names, model_dirs, 'case_1', 'img/taylor_ablation_case_1.jpg')
+    plot_taylor_diagram(model_names, model_dirs, 'case_0', 'results/img/taylor_ablation_case_0.jpg')
+    plot_taylor_diagram(model_names, model_dirs, 'case_1', 'results/img/taylor_ablation_case_1.jpg')
 
 
 def plot_taylor_diagram_comparison(model_names, model_dirs):
-    plot_taylor_diagram(model_names, model_dirs, 'case_0', 'img/taylor_comparison_case_0.jpg')
-    plot_taylor_diagram(model_names, model_dirs, 'case_1', 'img/taylor_comparison_case_1.jpg')
+    plot_taylor_diagram(model_names, model_dirs, 'case_0', 'results/img/taylor_comparison_case_0.jpg')
+    plot_taylor_diagram(model_names, model_dirs, 'case_1', 'results/img/taylor_comparison_case_1.jpg')
 
 
 def plot_maps_all(model_names, model_dirs):
-    plot_maps(model_names, model_dirs, 'case_0', 'img/vis_case_0.jpg')
-    plot_maps(model_names, model_dirs, 'case_1', 'img/vis_case_1.jpg')
+    plot_maps(model_names, model_dirs, 'case_0', 'results/img/vis_case_0.jpg')
+    plot_maps(model_names, model_dirs, 'case_1', 'results/img/vis_case_1.jpg')
 
 
 if __name__ == '__main__':

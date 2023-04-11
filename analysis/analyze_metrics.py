@@ -16,7 +16,7 @@ def get_model_metrics(model_dir: str):
 def concat_model_metrics(metrics: dict):       
     metrics_60min = pd.concat(metrics.values())
     metrics_60min = metrics_60min.drop(columns=['POD_20.0', 'FAR_20.0', 'CSI_20.0', 
-                                                'POD_30.0', 'FAR_30.0', 'CSI_30.0'])
+                                                'POD_40.0', 'FAR_40.0', 'CSI_40.0'])
     metrics_60min.index = metrics.keys()
     print(metrics_60min)
     return metrics_60min
