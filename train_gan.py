@@ -95,7 +95,7 @@ def main(args):
     optimizer_g = optim.Adam(generator.parameters(), args.learning_rate,
                              betas=(args.beta1, args.beta2),
                              weight_decay=args.weight_decay)
-    optimizer_d = optim.Adam(discriminator.parameters(), args.learning_rate,
+    optimizer_d = optim.Adam(discriminator.parameters(), args.learning_rate / 2,
                              betas=(args.beta1, args.beta2),
                              weight_decay=args.weight_decay)
     
@@ -289,9 +289,9 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
             loss_d = d_loss(fake_score, real_score)
             optimizer_d.zero_grad()
             loss_d.backward()
-            clip_grad_norm_(discriminator.parameters(), 1e-3)
+            clip_grad_norm_(discriminator.parameters(), 0.005)
             optimizer_d.step()
-            clip_weight(discriminator, 1e-3)
+            clip_weight(discriminator, 0.005)
 
             # Generator backward propagation
             fake_scores = [discriminator(torch.cat([input_norm, pred_norm], dim=1)) 

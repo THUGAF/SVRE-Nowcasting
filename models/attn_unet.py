@@ -107,7 +107,7 @@ class AttnUNet(nn.Module):
 
         # Decoding step
         if self.add_noise:
-            z = Normal(0, 1).sample(h5.size()).type_as(h5)
+            z = Normal(0.5, 2).sample(h5.size()).type_as(h5)
             h5 = torch.cat([h5, z], dim=1)
         h4p = self.deconv4(torch.cat([self.upsampling(h5), h4], dim=1))
         h3p = self.deconv3(torch.cat([self.upsampling(h4p), h3], dim=1))
