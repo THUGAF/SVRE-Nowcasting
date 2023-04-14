@@ -12,7 +12,7 @@ nohup python -u train_det.py \
     --learning-rate 1e-4 \
     --weight-decay 1e-2 \
     --weight-recon 10 \
-    --weight-svre 2 \
+    --weight-svre 1 \
     --num-threads 8 \
     --num-workers 8 \
     --case-indices 16840 17190 \
