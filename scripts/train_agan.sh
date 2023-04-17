@@ -1,11 +1,11 @@
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=0 \
 nohup python -u train_gan.py \
     --train \
     --test \
     --predict \
     --data-path /data/gaf/SBandCRPt \
     --output-path results/AGAN \
-    --num-ensembles 6 \
+    --num-ensembles 4 \
     --max-iterations 100000 \
     --early-stopping \
     --batch-size 8 \

@@ -57,8 +57,6 @@ parser.add_argument('--random-seed', type=int, default=2023)
 parser.add_argument('--resolution', type=float, default=6.0)
 parser.add_argument('--x-range', type=int, nargs='+', default=[272, 528])
 parser.add_argument('--y-range', type=int, nargs='+', default=[336, 592])
-parser.add_argument('--vmax', type=float, default=70.0)
-parser.add_argument('--vmin', type=float, default=0.0)
 
 # evaluation settings
 parser.add_argument('--thresholds', type=int, nargs='+', default=[20, 30, 40])
@@ -172,9 +170,9 @@ def early_stopping(score: list, patience: int = 10):
     return early_stopping_flag
 
 
-def weighted_l1_loss(pred: torch.Tensor, truth: torch.Tensor, vmax: float, vmin: float) -> torch.Tensor:
+def weighted_l1_loss(pred: torch.Tensor, truth: torch.Tensor) -> torch.Tensor:
     points = torch.tensor([10.0, 20.0, 30.0, 40.0])
-    points = transform.minmax_norm(points, vmax, vmin)
+    points = transform.minmax_norm(points)
     weight = (truth < points[0]) * 1 \
         + (torch.logical_and(truth >= points[0], truth < points[1])) * 2 \
         + (torch.logical_and(truth >= points[1], truth < points[2])) * 5 \
@@ -235,10 +233,10 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
             tensor = tensor.to(args.device)
             input_ = tensor[:, :args.input_steps]
             truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
-            input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
-            truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+            input_norm = transform.minmax_norm(input_)
+            truth_norm = transform.minmax_norm(truth)
             pred_norm = model(input_norm)
-            loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
+            loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm) + \
                 args.weight_svre * svre_loss(pred_norm, truth_norm)
 
             # Backward propagation
@@ -278,10 +276,10 @@ def train(model: nn.Module, optimizer: optim.Optimizer, train_loader: DataLoader
                 tensor = tensor.to(args.device)
                 input_ = tensor[:, :args.input_steps]
                 truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
-                input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
-                truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+                input_norm = transform.minmax_norm(input_)
+                truth_norm = transform.minmax_norm(truth)
                 pred_norm = model(input_norm)
-                loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm, args.vmax, args.vmin) + \
+                loss = args.weight_recon * weighted_l1_loss(pred_norm, truth_norm) + \
                     args.weight_svre * svre_loss(pred_norm, truth_norm)
 
                 # Record and print loss
@@ -345,10 +343,10 @@ def test(model: nn.Module, test_loader: DataLoader):
         tensor = tensor.to(args.device)
         input_ = tensor[:, :args.input_steps]
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
-        input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
-        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+        input_norm = transform.minmax_norm(input_)
+        truth_norm = transform.minmax_norm(truth)
         pred_norm = model(input_norm)
-        pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
+        pred = transform.reverse_minmax_norm(pred_norm)
 
         # Record and print time
         if (i + 1) % args.display_interval == 0:
@@ -401,10 +399,10 @@ def predict(model: nn.Module, case_loader: DataLoader):
         tensor = tensor.to(args.device)
         input_ = tensor[:, :args.input_steps]
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
-        input_norm = transform.minmax_norm(input_, args.vmax, args.vmin)
-        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+        input_norm = transform.minmax_norm(input_)
+        truth_norm = transform.minmax_norm(truth)
         pred_norm = model(input_norm)
-        pred = transform.reverse_minmax_norm(pred_norm, args.vmax, args.vmin)
+        pred = transform.reverse_minmax_norm(pred_norm)
         
         # Evaluation
         for threshold in args.thresholds:

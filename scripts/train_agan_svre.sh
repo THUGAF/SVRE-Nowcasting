@@ -5,7 +5,7 @@ nohup python -u train_gan.py \
     --predict \
     --data-path /data/gaf/SBandCRPt \
     --output-path results/AGAN_SVRE \
-    --num-ensembles 6 \
+    --num-ensembles 4 \
     --max-iterations 100000 \
     --early-stopping \
     --batch-size 8 \
