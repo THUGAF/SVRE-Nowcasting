@@ -467,15 +467,6 @@ def test(generator: nn.Module, test_loader: DataLoader):
 def predict(generator: nn.Module, case_loader: DataLoader):
     # Init metric dict
     metrics = {}
-    for threshold in args.thresholds:
-        metrics['POD_{:.1f}'.format(threshold)] = 0
-        metrics['FAR_{:.1f}'.format(threshold)] = 0
-        metrics['CSI_{:.1f}'.format(threshold)] = 0
-    metrics['MBE'] = 0
-    metrics['MAE'] = 0
-    metrics['RMSE'] = 0
-    metrics['SSIM'] = 0
-    metrics['JSD'] = 0
 
     # Predict
     print('\n[Predict]')
@@ -485,6 +476,16 @@ def predict(generator: nn.Module, case_loader: DataLoader):
     generator.eval()
 
     for i, (tensor, timestamp) in enumerate(case_loader):
+        for threshold in args.thresholds:
+            metrics['POD_{:.1f}'.format(threshold)] = 0
+            metrics['FAR_{:.1f}'.format(threshold)] = 0
+            metrics['CSI_{:.1f}'.format(threshold)] = 0
+        metrics['MBE'] = 0
+        metrics['MAE'] = 0
+        metrics['RMSE'] = 0
+        metrics['SSIM'] = 0
+        metrics['JSD'] = 0
+
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
         print('\nCase {} at {}'.format(i, time_str))

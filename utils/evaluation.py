@@ -6,29 +6,27 @@ import utils.ssim as ssim
 import utils.transform as transform
 
 
-def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) \
-        -> Tuple[int, int, int, int]:
+def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) -> Tuple[int, int, int, int]:
     assert pred.size() == truth.size()          # (B, L, C, H, W)
     pred, truth = pred.cpu(), truth.cpu()
     pred, truth = pred.mean(dim=1), truth.mean(dim=1)
-    stat = 2 * (truth > threshold).int() + (pred > threshold).int()
     # truth > th & pred > th
-    hits = int(torch.sum(stat == 3).item())
+    hits = torch.sum(torch.logical_and(truth >= threshold, pred >= threshold)).item()
     # truth > th & pred < th
-    misses = int(torch.sum(stat == 2).item())
+    misses = torch.sum(torch.logical_and(truth >= threshold, pred < threshold)).item()
     # truth < th & pred > th
-    false_alarms = int(torch.sum(stat == 1).item())
+    false_alarms = torch.sum(torch.logical_and(truth < threshold, pred >= threshold)).item()
     # truth < th & pred < th
-    correct_rejections = int(torch.sum(stat == 0).item())
+    correct_rejections = torch.sum(torch.logical_and(truth < threshold, pred < threshold)).item()
     return hits, misses, false_alarms, correct_rejections
 
 
-def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, 
-                      eps: float = 1e-4) -> Tuple[float, float, float]:
+def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float) \
+    -> Tuple[float, float, float]:
     h, m, f, c = _count(pred, truth, threshold)
-    pod = h / (h + m + eps)
-    far = f / (h + f + eps)
-    csi = h / (h + m + f + eps)
+    pod = h / (h + m)
+    far = f / (h + f)
+    csi = h / (h + m + f)
     return pod, far, csi
 
 

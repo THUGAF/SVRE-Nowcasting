@@ -1,4 +1,4 @@
-CUDA_VISIBLE_DEVICES=3 \
+CUDA_VISIBLE_DEVICES=1 \
 nohup python -u train_det.py \
     --train \
     --test \

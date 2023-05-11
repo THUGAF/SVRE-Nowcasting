@@ -6,8 +6,8 @@ import random
 import torch
 import pandas as pd
 import numpy as np
-from pysteps.motion.darts import DARTS
-from pysteps.nowcasts.sprog import forecast
+from pysteps.motion.lucaskanade import dense_lucaskanade
+from pysteps.extrapolation.semilagrangian import extrapolate
 from torch.utils.data import DataLoader
 import utils.dataloader as dataloader
 import utils.visualizer as visualizer
@@ -27,8 +27,8 @@ parser.add_argument('--case-indices', type=int, nargs='+', default=[0])
 # training settings
 parser.add_argument('--test', action='store_true')
 parser.add_argument('--predict', action='store_true')
-parser.add_argument('--train-ratio', type=float, default=0.64)
-parser.add_argument('--valid-ratio', type=float, default=0.16)
+parser.add_argument('--train-ratio', type=float, default=0.7)
+parser.add_argument('--valid-ratio', type=float, default=0.1)
 parser.add_argument('--num-workers', type=int, default=1)
 parser.add_argument('--num-threads', type=int, default=1)
 parser.add_argument('--display-interval', type=int, default=1)
@@ -38,8 +38,6 @@ parser.add_argument('--random-seed', type=int, default=2023)
 parser.add_argument('--resolution', type=float, default=6.0)
 parser.add_argument('--x-range', type=int, nargs='+', default=[272, 528])
 parser.add_argument('--y-range', type=int, nargs='+', default=[336, 592])
-parser.add_argument('--vmax', type=float, default=70.0)
-parser.add_argument('--vmin', type=float, default=0.0)
 
 # evaluation settings
 parser.add_argument('--thresholds', type=int, nargs='+', default=[20, 30, 40])
@@ -113,8 +111,8 @@ def test(test_loader: DataLoader):
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
         input_pysteps = input_[0, :, 0].numpy()
         with HiddenPrints():
-            velocity = DARTS(input_pysteps)
-            pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
+            velocity = dense_lucaskanade(input_pysteps)
+            pred_pysteps = extrapolate(input_pysteps[-1], velocity, args.forecast_steps)
             pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
 
@@ -123,8 +121,8 @@ def test(test_loader: DataLoader):
                 i + 1, len(test_loader), time.time() - test_batch_timer))
             test_batch_timer = time.time()
 
-        pred_norm = transform.minmax_norm(pred, args.vmax, args.vmin)
-        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+        pred_norm = transform.minmax_norm(pred)
+        truth_norm = transform.minmax_norm(truth)
         
         # Evaluation
         for threshold in args.thresholds:
@@ -161,8 +159,8 @@ def predict(case_loader: DataLoader):
         input_ = tensor[:, :args.input_steps]
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
         input_pysteps = input_[0, :, 0].numpy()
-        velocity = DARTS(input_pysteps)
-        pred_pysteps = forecast(input_pysteps[-3:], velocity, args.forecast_steps, R_thr=0)
+        velocity = dense_lucaskanade(input_pysteps)
+        pred_pysteps = extrapolate(input_pysteps[-1], velocity, args.forecast_steps)
         pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
     
@@ -175,8 +173,8 @@ def predict(case_loader: DataLoader):
         metrics['MBE'] = evaluation.evaluate_mbe(pred, truth)
         metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
         metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
-        pred_norm = transform.minmax_norm(pred, args.vmax, args.vmin)
-        truth_norm = transform.minmax_norm(truth, args.vmax, args.vmin)
+        pred_norm = transform.minmax_norm(pred)
+        truth_norm = transform.minmax_norm(truth)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['JSD'] = evaluation.evaluate_jsd(pred, truth)
         df = pd.DataFrame(data=metrics, index=[0])
