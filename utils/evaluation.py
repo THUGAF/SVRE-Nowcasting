@@ -21,12 +21,12 @@ def _count(pred: torch.Tensor, truth: torch. Tensor, threshold: float) -> Tuple[
     return hits, misses, false_alarms, correct_rejections
 
 
-def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float) \
+def evaluate_forecast(pred: torch.Tensor, truth: torch.Tensor, threshold: float, eps: float = 1e-4) \
     -> Tuple[float, float, float]:
     h, m, f, c = _count(pred, truth, threshold)
-    pod = h / (h + m)
-    far = f / (h + f)
-    csi = h / (h + m + f)
+    pod = h / (h + m + eps)
+    far = f / (h + f + eps)
+    csi = h / (h + m + f + eps)
     return pod, far, csi
 
 
