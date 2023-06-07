@@ -22,36 +22,20 @@ def concat_model_metrics(metrics: dict):
     return metrics_60min
 
 
-def analyze_ablation_metrics():
-    model_names = ['AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE']
-    model_dirs = ['results/AttnUNet', 'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+def analyze_metrics(model_names, model_dirs):
     test_metrics, case_0_metrics, case_1_metrics = {}, {}, {}
     for name, dir_ in zip(model_names, model_dirs):
         test_metrics[name], case_0_metrics[name], case_1_metrics[name] = get_model_metrics(dir_)
     test_metrics = concat_model_metrics(test_metrics)
     case_0_metrics = concat_model_metrics(case_0_metrics)
     case_1_metrics = concat_model_metrics(case_1_metrics)
-    with pd.ExcelWriter('results/metrics_ablation.xlsx') as writer:
-        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
-        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
-        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
-
-
-def analyze_comparison_metrics():
-    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN+SVRE']
-    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AGAN_SVRE']
-    test_metrics, case_0_metrics, case_1_metrics = {}, {}, {}
-    for name, dir_ in zip(model_names, model_dirs):
-        test_metrics[name], case_0_metrics[name], case_1_metrics[name] = get_model_metrics(dir_)
-    test_metrics = concat_model_metrics(test_metrics)
-    case_0_metrics = concat_model_metrics(case_0_metrics)
-    case_1_metrics = concat_model_metrics(case_1_metrics)
-    with pd.ExcelWriter('results/metrics_comparison.xlsx') as writer:
+    with pd.ExcelWriter('results/metrics.xlsx') as writer:
         test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
         case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
         case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
 
 
 if __name__ == '__main__':
-    analyze_ablation_metrics()
-    analyze_comparison_metrics()
+    analyze_metrics(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
+                    ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
+                     'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
