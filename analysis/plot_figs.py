@@ -6,9 +6,13 @@ import pandas as pd
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
+import matplotlib.colors as pcolors
+import matplotlib.ticker as ticker
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from sklearn.neighbors import KernelDensity
+from scipy.stats import gaussian_kde
 from utils.visualizer import *
 from utils.taylor_diagram import TaylorDiagram
 
@@ -66,6 +70,56 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     plt.close(fig)
 
 
+def plot_scatter(model_names, model_dirs, stage, img_path):
+    print('Plotting {} ...'.format(img_path))
+    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
+    xs = truth[0, -1, 0].numpy().flatten()
+    idx = np.random.choice(np.arange(len(xs)), 10000)
+    
+    num_subplot = len(model_names)
+    fig = plt.figure(figsize=((num_subplot + 1) // 2 * 6, 12), dpi=600)
+    for i in range(num_subplot):
+        ax = fig.add_subplot(2, (num_subplot + 1) // 2, i + 1)
+        pred = torch.load(os.path.join(model_dirs[i], stage, 'pred', 'pred.pt'))[0]
+        ys = pred[0, -1, 0].numpy().flatten()
+        x, y = xs[idx], ys[idx]
+        data = np.vstack([x, y])
+        kde = gaussian_kde(data)
+        density = kde.evaluate(data)
+        # data = np.vstack([x, y]).T
+        # kde = KernelDensity().fit(data)
+        # density = np.exp(kde.score_samples(data))
+        sc = ax.scatter(x, y, c=density, s=10, cmap='jet', norm=pcolors.Normalize(0, 0.0018))
+
+        ax.set_title(model_names[i], fontsize=20)
+        ax.set_xlabel('Observation (dBZ)', fontsize=18)
+        if i == 0 or i == 4:
+            ax.set_ylabel('Prediction (dBZ)', fontsize=18, labelpad=10)
+        ax.set_xlim([0, 65])
+        ax.set_ylim([0, 65])
+        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
+        ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
+        ax.axline((0, 0), (1, 1), color='k', linewidth=1, transform=ax.transAxes)
+        ax.set_aspect('equal')
+        ax.tick_params(labelsize=16)
+        print('Subplot ({}, {}, {}) added'.format(2, (num_subplot + 1) // 2, i + 1))
+    
+    plt.rc('font', size=16)
+    cax = fig.add_subplot(2, (num_subplot + 1) // 2, num_subplot + 1)
+    cax.set_position([cax.get_position().x0, cax.get_position().y0, 
+                      cax.get_position().width * 0.1, cax.get_position().height])
+    fmt = ticker.ScalarFormatter(useMathText=True)
+    fmt.set_powerlimits((0, 0))
+    fmt.set_scientific(True)
+    cbar = fig.colorbar(sc, cax=cax, orientation='vertical', format=fmt)
+    cbar.set_label('Probability Density', fontsize=20, labelpad=20)
+    cbar.ax.tick_params(labelsize=16)
+
+    fig.savefig(img_path, bbox_inches='tight')
+    print('{} saved'.format(img_path))
+    plt.close(fig)
+
+
 def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     print('Plotting {} ...'.format(img_path_1))
     print('Plotting {} ...'.format(img_path_2))
@@ -96,14 +150,14 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     ax1.invert_xaxis()
     ax1.set_xlabel('Wave Length (km)', fontsize=14)
     ax1.set_ylabel('Power spectral density of X axis', fontsize=14)
-    ax1.legend(legend, loc='lower left', fontsize='small', edgecolor='k', fancybox=False)
+    ax1.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
 
     ax2.set_xscale('log', base=2)
     ax2.set_yscale('log', base=10)
     ax2.invert_xaxis()
     ax2.set_xlabel('Wave Length (km)', fontsize=14)
     ax2.set_ylabel('Power spectral density of Y axis', fontsize=14)
-    ax2.legend(legend, loc='lower left', fontsize='small', edgecolor='k', fancybox=False)
+    ax2.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
 
     fig1.savefig(img_path_1, bbox_inches='tight')
     fig2.savefig(img_path_2, bbox_inches='tight')
@@ -144,7 +198,7 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
     taylor_diagram_60min.ax.legend(taylor_diagram_60min.samplePoints,
                                    [p.get_label() for p in taylor_diagram_60min.samplePoints],
                                    numpoints=1, loc='lower center', bbox_to_anchor=(0.5, -0.4),
-                                   ncols=2, fontsize='small', edgecolor='k', fancybox=False)
+                                   ncols=2, fontsize='small', edgecolor='w', fancybox=False)
     
     # Add title
     fig.savefig(img_path, bbox_inches='tight')
@@ -166,13 +220,17 @@ def plot_maps_all(model_names, model_dirs):
     plot_maps(model_names, model_dirs, 'case_1', 'results/img/vis_case_1.jpg')
 
 
+def plot_scatter_all(model_names, model_dirs):
+    plot_scatter(model_names, model_dirs, 'case_0', 'results/img/scatter_case_0.jpg')
+    plot_scatter(model_names, model_dirs, 'case_1', 'results/img/scatter_case_1.jpg')
+
+
 if __name__ == '__main__':
-    plot_psd_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                 ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
-                  'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
-    plot_taylor_diagram_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                            ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
-                             'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
-    plot_maps_all(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'], 
-                  ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
-                   'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
+    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN',
+                   'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE']
+    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet',
+                  'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+    plot_psd_all(model_names, model_dirs)
+    plot_taylor_diagram_all(model_names, model_dirs)
+    plot_maps_all(model_names, model_dirs)
+    plot_scatter_all(model_names, model_dirs)
