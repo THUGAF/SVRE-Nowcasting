@@ -11,7 +11,6 @@ import matplotlib.ticker as ticker
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
-from sklearn.neighbors import KernelDensity
 from scipy.stats import gaussian_kde
 from utils.visualizer import *
 from utils.taylor_diagram import TaylorDiagram
@@ -86,17 +85,14 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
         data = np.vstack([x, y])
         kde = gaussian_kde(data)
         density = kde.evaluate(data)
-        # data = np.vstack([x, y]).T
-        # kde = KernelDensity().fit(data)
-        # density = np.exp(kde.score_samples(data))
         sc = ax.scatter(x, y, c=density, s=10, cmap='jet', norm=pcolors.Normalize(0, 0.0018))
 
         ax.set_title(model_names[i], fontsize=20)
         ax.set_xlabel('Observation (dBZ)', fontsize=18)
         if i == 0 or i == 4:
             ax.set_ylabel('Prediction (dBZ)', fontsize=18, labelpad=10)
-        ax.set_xlim([0, 65])
-        ax.set_ylim([0, 65])
+        ax.set_xlim([0, 60])
+        ax.set_ylim([0, 60])
         ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.axline((0, 0), (1, 1), color='k', linewidth=1, transform=ax.transAxes)
@@ -120,18 +116,16 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
     plt.close(fig)
 
 
-def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
-    print('Plotting {} ...'.format(img_path_1))
-    print('Plotting {} ...'.format(img_path_2))
+def plot_psd(model_names, model_dirs, stage, img_path):
+    print('Plotting {} ...'.format(img_path))
     psd_x_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_x.csv'.format(stage)))
     psd_y_df = pd.read_csv(os.path.join(model_dirs[0], '{}_psd_y.csv'.format(stage)))
     wavelength_x, truth_psd_x = psd_x_df['wavelength_x'], psd_x_df['truth_psd_x']
     wavelength_y, truth_psd_y = psd_y_df['wavelength_y'], psd_y_df['truth_psd_y']
     
-    fig1 = plt.figure(figsize=(8, 4), dpi=600)
-    fig2 = plt.figure(figsize=(8, 4), dpi=600)
-    ax1 = fig1.add_subplot(1, 1, 1)
-    ax2 = fig2.add_subplot(1, 1, 1)
+    fig = plt.figure(figsize=(16, 4), dpi=600)
+    ax1 = fig.add_subplot(1, 2, 1)
+    ax2 = fig.add_subplot(1, 2, 2)
 
     ax1.plot(wavelength_x, truth_psd_x, color='k')
     ax2.plot(wavelength_y, truth_psd_y, color='k')
@@ -145,6 +139,7 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
         ax2.plot(wavelength_y, pred_psd_y, color=COLORS[i])
         legend.append(model_names[i])
     
+    ax1.text(-0.12, 1.05, '(a)', fontsize=18, transform=ax1.transAxes)
     ax1.set_xscale('log', base=2)
     ax1.set_yscale('log', base=10)
     ax1.invert_xaxis()
@@ -152,6 +147,7 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     ax1.set_ylabel('Power spectral density of X axis', fontsize=14)
     ax1.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
 
+    ax2.text(-0.12, 1.05, '(b)', fontsize=18, transform=ax2.transAxes)
     ax2.set_xscale('log', base=2)
     ax2.set_yscale('log', base=10)
     ax2.invert_xaxis()
@@ -159,12 +155,9 @@ def plot_psd(model_names, model_dirs, stage, img_path_1, img_path_2):
     ax2.set_ylabel('Power spectral density of Y axis', fontsize=14)
     ax2.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
 
-    fig1.savefig(img_path_1, bbox_inches='tight')
-    fig2.savefig(img_path_2, bbox_inches='tight')
-    print('{} saved'.format(img_path_1))
-    print('{} saved'.format(img_path_2))
-    plt.close(fig1)
-    plt.close(fig2)
+    fig.savefig(img_path, bbox_inches='tight')
+    print('{} saved'.format(img_path))
+    plt.close(fig)
 
 
 def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path: str, 
@@ -206,8 +199,8 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
 
 
 def plot_psd_all(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'case_0', 'results/img/psd_case_0_x.jpg', 'results/img/psd_case_0_y.jpg')
-    plot_psd(model_names, model_dirs, 'case_1', 'results/img/psd_case_1_x.jpg', 'results/img/psd_case_1_y.jpg')
+    plot_psd(model_names, model_dirs, 'case_0', 'results/img/psd_case_0.jpg')
+    plot_psd(model_names, model_dirs, 'case_1', 'results/img/psd_case_1.jpg')
 
 
 def plot_taylor_diagram_all(model_names, model_dirs):
