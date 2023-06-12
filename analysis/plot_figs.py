@@ -28,7 +28,7 @@ def plot_maps(model_names, model_dirs, stage, img_path):
     truth = truth[0, -1, 0].numpy()
     
     num_subplot = len(model_names) + 1
-    fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=600)
+    fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=300)
     for i in range(num_subplot):
         ax = fig.add_subplot(2, num_subplot // 2, i + 1, projection=ccrs.UTM(50))
         if i == 0:
@@ -76,7 +76,7 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
     idx = np.random.choice(np.arange(len(xs)), 10000)
     
     num_subplot = len(model_names)
-    fig = plt.figure(figsize=((num_subplot + 1) // 2 * 6, 12), dpi=600)
+    fig = plt.figure(figsize=((num_subplot + 1) // 2 * 6, 12), dpi=300)
     for i in range(num_subplot):
         ax = fig.add_subplot(2, (num_subplot + 1) // 2, i + 1)
         pred = torch.load(os.path.join(model_dirs[i], stage, 'pred', 'pred.pt'))[0]
@@ -123,7 +123,7 @@ def plot_psd(model_names, model_dirs, stage, img_path):
     wavelength_x, truth_psd_x = psd_x_df['wavelength_x'], psd_x_df['truth_psd_x']
     wavelength_y, truth_psd_y = psd_y_df['wavelength_y'], psd_y_df['truth_psd_y']
     
-    fig = plt.figure(figsize=(16, 4), dpi=600)
+    fig = plt.figure(figsize=(16, 4), dpi=300)
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
 
@@ -162,7 +162,7 @@ def plot_psd(model_names, model_dirs, stage, img_path):
 
 def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path: str, 
                         std_range: tuple = (0, 1), std_num: int = 6):
-    fig = plt.figure(figsize=(4, 4), dpi=600)
+    fig = plt.figure(figsize=(4, 4), dpi=300)
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
     truth_60min = truth[0, -1, 0].numpy()
     ref_std_60min = np.std(truth_60min)
