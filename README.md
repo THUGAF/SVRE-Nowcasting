@@ -1,6 +1,6 @@
-# Enhancing Spatial Variability Representation of Radar Nowcasting
+# Enhancing Spatial Variability Representation of Radar Nowcasting with Generative Adversarial Networks
 
-This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** method and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
+This repo contains a PyTorch implementation of the **Spatial Variability Representation Enhancement (SVRE)** loss function and the **Attentional Generative Adversarial Network (AGAN)** for improving radar nowcasting.
 
 ## Dependencies
 
@@ -20,27 +20,25 @@ pysteps=1.4.1
 
 Run the bash scripts to train the model with the radar dataset.
 
-Ablation experiment
+* Ablation experiments for SVRE and AGAN
 
 ```cd
-sh AttnUNet.sh
-sh AttnUNet_SVRE.sh
-sh AttnUNet_GA.sh
-sh AttnUNet_GASVRE.sh
+sh train_attn_unet.sh
+sh train_attn_unet_svre.sh
+sh train_agan.sh
+sh train_agan_svre.sh
 ```
 
-Comparison experiment
+* Comparison experiments for baseline models
 
 ```cd
-sh PySTEPS.sh
-sh ConvLSTM.sh
-sh SmaAt_UNet.sh
-sh AttnUNet_GASVRE.sh
+sh test_pysteps.sh
+sh train_motion_rnn.sh
+sh train_smaat_unet.sh
 ```
 
-The intermediate products, such as the feature maps and the
-pretrained models are available upon request.
+## Citation
 
-<!-- ## Citation -->
+If you find this repo helpful, please cite the following article.
 
-<!-- If you find this repo helpful, please cite the following article. -->
+> Gong, A.; Li, R.; Pan, B.; Chen, H.; Ni, G.; Chen, M. Enhancing Spatial Variability Representation of Radar Nowcasting with Generative Adversarial Networks. Remote Sens. 2023, 15, 3306. [https://doi.org/10.3390/rs15133306](https://doi.org/10.3390/rs15133306)
