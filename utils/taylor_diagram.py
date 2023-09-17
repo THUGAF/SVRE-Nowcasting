@@ -44,7 +44,7 @@ class TaylorDiagram(object):
         # Extended to negative correlations
         if extend:
             self.theta_max = np.pi
-            r_locs = np.concatenate((-r_locs[:0:-1], r_locs))
+            r_locs = np.concatenate((-r_locs[::-1], r_locs))
         else:
             self.theta_max = np.pi / 2.0
 
