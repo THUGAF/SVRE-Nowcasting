@@ -46,7 +46,7 @@ class TrainingDataset(Dataset):
         return sum(self.sample_num)
         
     def locate_files(self, index: int) -> list:
-        date_order = np.where(index - self.sample_cumsum < 0)[0][0]
+        date_order = np.where((index - self.sample_cumsum) < 0)[0][0]
         if date_order == 0:
             file_anchor = index
         else:
