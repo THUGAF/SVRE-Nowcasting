@@ -3,7 +3,7 @@ nohup python -u train_det.py \
     --train \
     --test \
     --predict \
-    --data-path /data/gaf/SBandCRPt \
+    --data-path /data2/gaf/SBandCR_PT \
     --output-path results/SmaAt_UNet \
     --model SmaAt_UNet \
     --max-iterations 100000 \

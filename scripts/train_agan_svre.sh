@@ -3,7 +3,7 @@ nohup python -u train_gan.py \
     --train \
     --test \
     --predict \
-    --data-path /data/gaf/SBandCRPt \
+    --data-path /data2/gaf/SBandCR_PT \
     --output-path results/AGAN_SVRE \
     --num-ensembles 6 \
     --max-iterations 100000 \
