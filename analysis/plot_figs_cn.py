@@ -8,11 +8,11 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as pcolors
 import matplotlib.ticker as ticker
+import pyproj
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from scipy.stats import gaussian_kde
-import pyproj
 from utils.taylor_diagram import TaylorDiagram
 
 
@@ -28,10 +28,9 @@ RIGHT_TOP_LAT, RIGHT_TOP_LON = TRANS_UTM_TO_LONLAT.transform(CENTER_UTM_X + 1280
 STUDY_AREA = [LEFT_BOTTOM_LON, RIGHT_TOP_LON, LEFT_BOTTOM_LAT, RIGHT_TOP_LAT]
 UTM_X = CENTER_UTM_X + np.arange(-400000, 401000, 1000)
 UTM_Y = CENTER_UTM_Y + np.arange(-400000, 401000, 1000)
-X_RANGE = [272, 528]
-Y_RANGE = [336, 592]
+X_RANGE, Y_RANGE = [272, 528], [336, 592]
 CMAP = pcolors.ListedColormap(['#ffffff', '#2aedef', '#0a22f4', '#29fd2f', '#139116',
-                                 '#fffd38', '#fb9124', '#f90f1c', '#bd0713', '#da66fb'])
+                               '#fffd38', '#fb9124', '#f90f1c', '#bd0713', '#da66fb'])
 NORM = pcolors.BoundaryNorm([0, 0.1, 1, 2, 3, 5, 10, 20, 30, 50], CMAP.N, extend='max')
 COLORS = ['tab:orange', 'tab:green', 'tab:brown', 'cyan', 'deepskyblue', 'tab:blue', 'darkblue']
 MARKERS = ['o', '^', 'd', 'X', 'X', 'X', 'X']
@@ -55,12 +54,14 @@ def plot_map(model_names, model_dirs, stage, img_path):
     input_R, truth_R = ref_to_R(input_), ref_to_R(truth)
     input_R, truth_R = input_R[0, -1, 0].numpy(), truth_R[0, -1, 0].numpy()
     num_subplot = len(model_names) + 1
-    fig = plt.figure(figsize=(num_subplot // 2 * 6, 12), dpi=300)
+    num_row = 2
+    num_col = num_subplot // num_row
+    fig = plt.figure(figsize=(num_col* 6, num_row * 6), dpi=300)
     for n in range(num_subplot):
-        ax = fig.add_subplot(2, num_subplot // 2, n + 1, projection=ccrs.UTM(50))
+        ax = fig.add_subplot(num_row, num_col, n + 1, projection=ccrs.UTM(50))
         if n == 0:
             tensor = truth_R
-            title = '+60 min OBS'
+            title = 'OBS'
         else:
             pred = torch.load(os.path.join(model_dirs[n - 1], stage, 'pred', 'pred.pt'))[0]
             pred_R = ref_to_R(pred)
@@ -79,18 +80,18 @@ def plot_map(model_names, model_dirs, stage, img_path):
                           linewidth=1, linestyle=':', color='k', alpha=0.8)
         gl.xlabel_style = {'size': 14}
         gl.ylabel_style = {'size': 14}
-        gl.top_labels = False
-        gl.right_labels = False
+        if n % num_col < num_col - 1:
+            gl.right_labels = False
         ax.xaxis.set_major_formatter(LongitudeFormatter())
         ax.yaxis.set_major_formatter(LatitudeFormatter())
         ax.tick_params(labelsize=12)
         ax.set_aspect('equal')
-        ax.set_title(title, fontsize=20)
+        ax.set_title(title, fontsize=20, pad=10)
     
-    fig.subplots_adjust(right=0.92)
+    fig.subplots_adjust(right=0.9)
     cax = fig.add_axes([0.94, 0.14, 0.012, 0.72])
     cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
-    cbar.set_label('降雨强度 (mm/h)', fontsize=20, fontfamily='SimHei')
+    cbar.set_label('降水强度 (mm/h)', fontsize=20, fontfamily='SimHei')
     cbar.ax.tick_params(labelsize=18)
 
     fig.savefig(img_path, bbox_inches='tight')
@@ -251,7 +252,7 @@ def plot_scatter_all(model_names, model_dirs):
 
 
 if __name__ == '__main__':
-    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE']
+    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
                   'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
     plot_psd_all(model_names, model_dirs)

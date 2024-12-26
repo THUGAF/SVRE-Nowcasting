@@ -36,6 +36,7 @@ def analyze_metrics(model_names, model_dirs):
 
 
 if __name__ == '__main__':
-    analyze_metrics(['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AGAN(g)', 'AGAN(g)+SVRE', 'AGAN', 'AGAN+SVRE'],
-                    ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
-                     'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE'])
+    model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
+    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
+                  'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+    analyze_metrics(model_names, model_dirs)
