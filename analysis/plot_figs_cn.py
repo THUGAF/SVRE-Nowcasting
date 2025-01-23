@@ -36,6 +36,7 @@ COLORS = ['tab:orange', 'tab:green', 'tab:brown', 'cyan', 'deepskyblue', 'tab:bl
 MARKERS = ['o', '^', 'd', 'X', 'X', 'X', 'X']
 
 plt.rcParams['font.family'] = 'Arial'
+plt.rcParams['mathtext.fontset'] = 'custom'
 plt.rcParams['mathtext.rm'] = 'Arial'               # 用于正常数学文本
 plt.rcParams['mathtext.it'] = 'Arial:italic'        # 用于斜体数学文本
 
@@ -156,7 +157,7 @@ def plot_psd(model_names, model_dirs, stage, img_path):
     wavelength_x, truth_psd_x = psd_x_df['wavelength_x'], psd_x_df['truth_psd_x']
     wavelength_y, truth_psd_y = psd_y_df['wavelength_y'], psd_y_df['truth_psd_y']
     
-    fig = plt.figure(figsize=(16, 4), dpi=300)
+    fig = plt.figure(figsize=(14, 4), dpi=300)
     ax1 = fig.add_subplot(1, 2, 1)
     ax2 = fig.add_subplot(1, 2, 2)
 
@@ -256,6 +257,6 @@ if __name__ == '__main__':
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
                   'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
     plot_psd_all(model_names, model_dirs)
-    plot_taylor_diagram_all(model_names, model_dirs)
-    plot_map_all(model_names, model_dirs)
-    plot_scatter_all(model_names, model_dirs)
+    # plot_taylor_diagram_all(model_names, model_dirs)
+    # plot_map_all(model_names, model_dirs)
+    # plot_scatter_all(model_names, model_dirs)
