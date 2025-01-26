@@ -17,6 +17,7 @@ def concat_model_metrics(metrics: dict):
     metrics_60min = pd.concat(metrics.values())
     metrics_60min = metrics_60min.drop(columns=['POD_20.0', 'FAR_20.0', 'CSI_20.0', 
                                                 'POD_40.0', 'FAR_40.0', 'CSI_40.0'])
+    metrics_60min = metrics_60min.rename(columns={'POD_30.0': 'POD', 'FAR_30.0': 'FAR', 'CSI_30.0': 'CSI'})
     metrics_60min.index = metrics.keys()
     print(metrics_60min)
     return metrics_60min
@@ -37,6 +38,6 @@ def analyze_metrics(model_names, model_dirs):
 
 if __name__ == '__main__':
     model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
-    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
-                  'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
+                  'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
     analyze_metrics(model_names, model_dirs)

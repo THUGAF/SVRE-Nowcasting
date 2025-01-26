@@ -66,7 +66,7 @@ class CBAM(nn.Module):
         return out
 
 
-class AttnUNet(nn.Module):
+class AN(nn.Module):
     def __init__(self, input_steps: int, forecast_steps: int, add_noise: bool = False):
         super().__init__()
         self.input_steps = input_steps

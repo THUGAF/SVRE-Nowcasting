@@ -87,7 +87,7 @@ def main(args):
         args.device = 'cpu'
 
     # Set model and optimizer
-    generator = models.AttnUNet(args.input_steps, args.forecast_steps, add_noise=True).to(args.device)
+    generator = models.AN(args.input_steps, args.forecast_steps, add_noise=True).to(args.device)
     discriminator = models.Discriminator(args.input_steps + args.forecast_steps).to(args.device)
     count_params(generator, discriminator)
     optimizer_g = optim.Adam(generator.parameters(), args.learning_rate,
@@ -352,7 +352,7 @@ def train(generator: nn.Module, discriminator: nn.Module, optimizer_g: optim.Opt
                 loss_g = g_loss(fake_score) + \
                     args.weight_svre * svre_loss(pred_norm, truth_norm) + \
                     args.weight_recon * weighted_l1_loss(pred_norm, truth_norm)
-                pred = transform.reverse_minmax_norm(pred_norm)
+                pred = transform.inverse_minmax_norm(pred_norm)
                 score = evaluation.evaluate_forecast(pred, truth, args.thresholds[-1])[2]
 
                 # Record and print loss
@@ -429,21 +429,24 @@ def test(generator: nn.Module, test_loader: DataLoader):
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
         input_norm = transform.minmax_norm(input_)
         truth_norm = transform.minmax_norm(truth)
-        for _ in range(args.num_ensembles):
-            pred_norm = generator(input_norm)
-            pred = transform.reverse_minmax_norm(pred_norm)
+        truth_R = transform.ref_to_R(truth)
+        preds_norm = [generator(input_norm) for _ in range(args.num_ensembles)]
+        pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
+        pred = transform.inverse_minmax_norm(pred_norm)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
 
-            # Evaluation       
-            for threshold in args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
-                metrics['POD_{:.1f}'.format(threshold)] += pod
-                metrics['FAR_{:.1f}'.format(threshold)] += far
-                metrics['CSI_{:.1f}'.format(threshold)] += csi
-            metrics['MBE'] += evaluation.evaluate_mbe(pred, truth)
-            metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
-            metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
-            metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-            metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
+        # Evaluation       
+        for threshold in args.thresholds:
+            pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
+            metrics['POD_{:.1f}'.format(threshold)] += pod
+            metrics['FAR_{:.1f}'.format(threshold)] += far
+            metrics['CSI_{:.1f}'.format(threshold)] += csi
+        metrics['MBE'] += evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] += evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] += evaluation.evaluate_rmse(pred_R, truth_R)
+        metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
+        metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
         
         # Record and print time
         if (i + 1) % args.display_interval == 0:
@@ -456,7 +459,7 @@ def test(generator: nn.Module, test_loader: DataLoader):
 
     # Save metrics
     for key in metrics.keys():
-        metrics[key] = metrics[key] / len(test_loader) / args.num_ensembles
+        metrics[key] = metrics[key] / len(test_loader)
     df = pd.DataFrame(data=metrics, index=[0])
     df.to_csv(os.path.join(args.output_path, 'test_metrics.csv'), 
               float_format='%.6f', index=False)
@@ -496,23 +499,23 @@ def predict(generator: nn.Module, case_loader: DataLoader):
         truth = tensor[:, args.input_steps: args.input_steps + args.forecast_steps]
         input_norm = transform.minmax_norm(input_)
         truth_norm = transform.minmax_norm(truth)
-        preds = []
-        for _ in range(args.num_ensembles):
-            pred_norm = generator(input_norm)
-            pred = transform.reverse_minmax_norm(pred_norm)
-            preds.append(pred)
-
-            # Evaluation
-            for threshold in args.thresholds:
-                pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
-                metrics['POD_{:.1f}'.format(threshold)] += pod
-                metrics['FAR_{:.1f}'.format(threshold)] += far
-                metrics['CSI_{:.1f}'.format(threshold)] += csi
-            metrics['MBE'] += evaluation.evaluate_mbe(pred, truth)
-            metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
-            metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
-            metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-            metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
+        preds_norm = [generator(input_norm) for _ in range(args.num_ensembles)]
+        pred_norm = torch.mean(torch.stack(preds_norm), dim=0)
+        pred = transform.inverse_minmax_norm(pred_norm)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
+            
+        # Evaluation
+        for threshold in args.thresholds:
+            pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
+            metrics['POD_{:.1f}'.format(threshold)] = pod
+            metrics['FAR_{:.1f}'.format(threshold)] = far
+            metrics['CSI_{:.1f}'.format(threshold)] = csi
+        metrics['MBE'] += evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] += evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] += evaluation.evaluate_rmse(pred_R, truth_R)
+        metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
+        metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
             
         # Save metrics
         for key in metrics.keys():
@@ -523,7 +526,6 @@ def predict(generator: nn.Module, case_loader: DataLoader):
         print('Case {} metrics saved'.format(i))
 
         # Save tensors and figures
-        pred = torch.mean(torch.stack(preds), dim=0)
         visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
                                args.output_path, 'case_{}'.format(i), 'input')
         visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],

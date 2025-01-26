@@ -1,0 +1,2 @@
+sh scripts/train_an.sh & sh scripts/train_an_svre.sh & sh scripts/train_agan.sh & sh scripts/train_agan_svre.sh \
+& sh scripts/test_pysteps.sh & sh scripts/train_motion_rnn.sh & sh scripts/train_smaat_unet.sh

@@ -14,6 +14,7 @@ import cartopy.feature as cfeature
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 from scipy.stats import gaussian_kde
 from utils.taylor_diagram import TaylorDiagram
+from utils.transform import ref_to_R
 
 
 # Coordinate transformation
@@ -41,12 +42,66 @@ plt.rcParams['mathtext.rm'] = 'Arial'               # 用于正常数学文本
 plt.rcParams['mathtext.it'] = 'Arial:italic'        # 用于斜体数学文本
 
 
-def ref_to_R(ref: torch.Tensor, a: float = 238, b: float = 1.57) -> torch.Tensor:
-    Z = 10 ** (ref / 10)
-    R = ((1 / a) * Z) ** (1 / b)
-    R = torch.clip(R, min=0.0, max=torch.inf)
-    return R
-
+def plot_bar(model_names, stage, img_path):
+    df = pd.read_excel('results/metrics.xlsx', sheet_name=stage, index_col=0)
+    print(df)
+    
+    fig = plt.figure(figsize=(7, 9), dpi=300)
+    num_models = len(model_names)
+    width = 1 / (num_models + 1)
+    
+    ax1 = fig.add_subplot(3, 1, 1)
+    labels = df.columns.values[:3]
+    metrics = df.values[:, :3]
+    l = np.arange(len(labels))
+    bars = []
+    for m in range(num_models):
+        b = ax1.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
+                    label=model_names[m], color=COLORS[m], linewidth=0)
+        ax1.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        bars.append(b)
+    ax1.set_xticks(l, labels=labels)
+    ax1.set_ylim(0, 1)
+    ax1.tick_params(labelsize=10)
+    ax1.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    print('Subplot (3, 1, 1) added')
+    
+    ax2 = fig.add_subplot(3, 1, 2)
+    labels = df.columns.values[3:6]
+    metrics = df.values[:, 3:6]
+    l = np.arange(len(labels))
+    bars = []
+    for m in range(num_models):
+        b = ax2.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
+                    label=model_names[m], color=COLORS[m], linewidth=0)
+        ax2.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        bars.append(b)
+    ax2.set_xticks(l, labels=labels)
+    ax2.set_ylim(0, np.ceil(np.max(metrics)))
+    ax2.tick_params(labelsize=10)
+    ax2.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    print('Subplot (3, 1, 2) added')
+    
+    ax3 = fig.add_subplot(3, 1, 3)
+    labels = df.columns.values[6:8]
+    metrics = df.values[:, 6:8]
+    l = np.arange(len(labels))
+    bars = []
+    for m in range(num_models):
+        b = ax3.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
+                    label=model_names[m], color=COLORS[m], linewidth=0)
+        ax3.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        bars.append(b)
+    ax3.set_xticks(l, labels=labels)
+    ax3.set_ylim(0, 1)
+    ax3.tick_params(labelsize=10)
+    ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    print('Subplot (3, 1, 3) added')
+    
+    fig.savefig(img_path, bbox_inches='tight')
+    print('{}'.format(img_path))
+    plt.close(fig)
+    
 
 def plot_map(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
@@ -96,7 +151,7 @@ def plot_map(model_names, model_dirs, stage, img_path):
     cbar.ax.tick_params(labelsize=18)
 
     fig.savefig(img_path, bbox_inches='tight')
-    print('{} saved'.format(img_path))
+    print('{}'.format(img_path))
     plt.close(fig)
 
 
@@ -146,7 +201,7 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
     cbar.ax.tick_params(labelsize=16)
 
     fig.savefig(img_path, bbox_inches='tight')
-    print('{} saved'.format(img_path))
+    print('{}'.format(img_path))
     plt.close(fig)
 
 
@@ -173,24 +228,24 @@ def plot_psd(model_names, model_dirs, stage, img_path):
         ax2.plot(wavelength_y, pred_psd_y, color=COLORS[i])
         legend.append(model_names[i])
     
-    # ax1.text(-0.12, 1.05, '(a)', fontsize=18, transform=ax1.transAxes)
     ax1.set_xscale('log', base=2)
     ax1.set_yscale('log', base=10)
     ax1.invert_xaxis()
     ax1.set_xlabel('波长 (km)', fontsize=14, fontfamily='SimHei')
     ax1.set_ylabel('X方向功率谱密度', fontsize=14, fontfamily='SimHei')
-    ax1.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
+    ax1.legend(legend, loc='lower left', fontsize=10, edgecolor='w', fancybox=False)
+    ax1.tick_params(labelsize=10)
 
-    # ax2.text(-0.12, 1.05, '(b)', fontsize=18, transform=ax2.transAxes)
     ax2.set_xscale('log', base=2)
     ax2.set_yscale('log', base=10)
     ax2.invert_xaxis()
     ax2.set_xlabel('波长 (km)', fontsize=14, fontfamily='SimHei')
     ax2.set_ylabel('Y方向功率谱密度', fontsize=14, fontfamily='SimHei')
-    ax2.legend(legend, loc='lower left', fontsize='small', edgecolor='w', fancybox=False)
+    ax2.legend(legend, loc='lower left', fontsize=10, edgecolor='w', fancybox=False)
+    ax2.tick_params(labelsize=10)
 
     fig.savefig(img_path, bbox_inches='tight')
-    print('{} saved'.format(img_path))
+    print('{}'.format(img_path))
     plt.close(fig)
 
 
@@ -230,33 +285,17 @@ def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path
     # Add title
     fig.savefig(img_path, bbox_inches='tight')
     plt.close(fig)
-
-
-def plot_psd_all(model_names, model_dirs):
-    plot_psd(model_names, model_dirs, 'case_0', 'results/img_cn/psd_case_0.jpg')
-    plot_psd(model_names, model_dirs, 'case_1', 'results/img_cn/psd_case_1.jpg')
-
-
-def plot_taylor_diagram_all(model_names, model_dirs):
-    plot_taylor_diagram(model_names, model_dirs, 'case_0', 'results/img_cn/taylor_case_0.jpg')
-    plot_taylor_diagram(model_names, model_dirs, 'case_1', 'results/img_cn/taylor_case_1.jpg')
-
-
-def plot_map_all(model_names, model_dirs):
-    plot_map(model_names, model_dirs, 'case_0', 'results/img_cn/vis_case_0.jpg')
-    plot_map(model_names, model_dirs, 'case_1', 'results/img_cn/vis_case_1.jpg')
-
-
-def plot_scatter_all(model_names, model_dirs):
-    plot_scatter(model_names, model_dirs, 'case_0', 'results/img_cn/scatter_case_0.jpg')
-    plot_scatter(model_names, model_dirs, 'case_1', 'results/img_cn/scatter_case_1.jpg')
+    
 
 
 if __name__ == '__main__':
     model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
-    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AttnUNet', 
-                  'results/AttnUNet_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
-    plot_psd_all(model_names, model_dirs)
-    # plot_taylor_diagram_all(model_names, model_dirs)
-    # plot_map_all(model_names, model_dirs)
-    # plot_scatter_all(model_names, model_dirs)
+    model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
+                  'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+    plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
+    for i in range(2):
+        plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
+        plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
+        plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
+        plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
+        plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))

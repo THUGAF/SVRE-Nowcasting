@@ -115,6 +115,8 @@ def test(test_loader: DataLoader):
             pred_pysteps = extrapolate(input_pysteps[-1], velocity, args.forecast_steps)
             pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
 
         if (i + 1) % args.display_interval == 0:
             print('Batch: [{}][{}]\t\tTime: {:.4f}'.format(
@@ -130,9 +132,9 @@ def test(test_loader: DataLoader):
             metrics['POD_{:.1f}'.format(threshold)] += pod
             metrics['FAR_{:.1f}'.format(threshold)] += far
             metrics['CSI_{:.1f}'.format(threshold)] += csi
-        metrics['MBE'] += evaluation.evaluate_mbe(pred, truth)
-        metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
-        metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
+        metrics['MBE'] += evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] += evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] += evaluation.evaluate_rmse(pred_R, truth_R)
         metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
 
@@ -163,6 +165,8 @@ def predict(case_loader: DataLoader):
         pred_pysteps = extrapolate(input_pysteps[-1], velocity, args.forecast_steps)
         pred_pysteps = np.nan_to_num(pred_pysteps)
         pred = torch.from_numpy(pred_pysteps).view_as(truth)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
     
         # Evaluation
         for threshold in args.thresholds:
@@ -170,9 +174,9 @@ def predict(case_loader: DataLoader):
             metrics['POD_{:.1f}'.format(threshold)] = pod
             metrics['FAR_{:.1f}'.format(threshold)] = far
             metrics['CSI_{:.1f}'.format(threshold)] = csi
-        metrics['MBE'] = evaluation.evaluate_mbe(pred, truth)
-        metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
-        metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
+        metrics['MBE'] = evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] = evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] = evaluation.evaluate_rmse(pred_R, truth_R)
         pred_norm = transform.minmax_norm(pred)
         truth_norm = transform.minmax_norm(truth)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)

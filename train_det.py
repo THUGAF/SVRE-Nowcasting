@@ -86,8 +86,8 @@ def main(args):
         args.device = 'cpu'
 
     # Set model and optimizer
-    if args.model == 'AttnUNet':
-        model = models.AttnUNet(args.input_steps, args.forecast_steps).to(args.device)
+    if args.model == 'AN':
+        model = models.AN(args.input_steps, args.forecast_steps).to(args.device)
     elif args.model == 'ConvLSTM': 
         model = models.ConvLSTM(args.forecast_steps).to(args.device)
     elif args.model == 'SmaAt_UNet': 
@@ -346,7 +346,9 @@ def test(model: nn.Module, test_loader: DataLoader):
         input_norm = transform.minmax_norm(input_)
         truth_norm = transform.minmax_norm(truth)
         pred_norm = model(input_norm)
-        pred = transform.reverse_minmax_norm(pred_norm)
+        pred = transform.inverse_minmax_norm(pred_norm)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
 
         # Record and print time
         if (i + 1) % args.display_interval == 0:
@@ -360,9 +362,9 @@ def test(model: nn.Module, test_loader: DataLoader):
             metrics['POD_{:.1f}'.format(threshold)] += pod
             metrics['FAR_{:.1f}'.format(threshold)] += far
             metrics['CSI_{:.1f}'.format(threshold)] += csi
-        metrics['MBE'] += evaluation.evaluate_mbe(pred, truth)
-        metrics['MAE'] += evaluation.evaluate_mae(pred, truth)
-        metrics['RMSE'] += evaluation.evaluate_rmse(pred, truth)
+        metrics['MBE'] += evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] += evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] += evaluation.evaluate_rmse(pred_R, truth_R)
         metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
     
@@ -402,7 +404,9 @@ def predict(model: nn.Module, case_loader: DataLoader):
         input_norm = transform.minmax_norm(input_)
         truth_norm = transform.minmax_norm(truth)
         pred_norm = model(input_norm)
-        pred = transform.reverse_minmax_norm(pred_norm)
+        pred = transform.inverse_minmax_norm(pred_norm)
+        truth_R = transform.ref_to_R(truth)
+        pred_R = transform.ref_to_R(pred)
         
         # Evaluation
         for threshold in args.thresholds:
@@ -410,9 +414,9 @@ def predict(model: nn.Module, case_loader: DataLoader):
             metrics['POD_{:.1f}'.format(threshold)] = pod
             metrics['FAR_{:.1f}'.format(threshold)] = far
             metrics['CSI_{:.1f}'.format(threshold)] = csi
-        metrics['MBE'] = evaluation.evaluate_mbe(pred, truth)
-        metrics['MAE'] = evaluation.evaluate_mae(pred, truth)
-        metrics['RMSE'] = evaluation.evaluate_rmse(pred, truth)
+        metrics['MBE'] = evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] = evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] = evaluation.evaluate_rmse(pred_R, truth_R)
         metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
         metrics['JSD'] = evaluation.evaluate_jsd(pred, truth)
         
