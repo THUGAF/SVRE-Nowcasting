@@ -43,6 +43,7 @@ plt.rcParams['mathtext.it'] = 'Arial:italic'        # 用于斜体数学文本
 
 
 def plot_bar(model_names, stage, img_path):
+    print('Plotting {} ...'.format(img_path))
     df = pd.read_excel('results/metrics.xlsx', sheet_name=stage, index_col=0)
     print(df)
     
@@ -58,12 +59,12 @@ def plot_bar(model_names, stage, img_path):
     for m in range(num_models):
         b = ax1.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
                     label=model_names[m], color=COLORS[m], linewidth=0)
-        ax1.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        # ax1.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
         bars.append(b)
     ax1.set_xticks(l, labels=labels)
     ax1.set_ylim(0, 1)
     ax1.tick_params(labelsize=10)
-    ax1.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    ax1.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
     print('Subplot (3, 1, 1) added')
     
     ax2 = fig.add_subplot(3, 1, 2)
@@ -74,12 +75,12 @@ def plot_bar(model_names, stage, img_path):
     for m in range(num_models):
         b = ax2.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
                     label=model_names[m], color=COLORS[m], linewidth=0)
-        ax2.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        # ax2.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
         bars.append(b)
     ax2.set_xticks(l, labels=labels)
     ax2.set_ylim(0, np.ceil(np.max(metrics)))
     ax2.tick_params(labelsize=10)
-    ax2.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    ax2.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
     print('Subplot (3, 1, 2) added')
     
     ax3 = fig.add_subplot(3, 1, 3)
@@ -90,12 +91,12 @@ def plot_bar(model_names, stage, img_path):
     for m in range(num_models):
         b = ax3.bar((l + width * (m - (num_models - 1) / 2)), metrics[m], width,
                     label=model_names[m], color=COLORS[m], linewidth=0)
-        ax3.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
+        # ax3.bar_label(b, fmt='%.3f', padding=1, fontsize=8, rotation=90)
         bars.append(b)
     ax3.set_xticks(l, labels=labels)
     ax3.set_ylim(0, 1)
     ax3.tick_params(labelsize=10)
-    ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=3)
+    ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
     print('Subplot (3, 1, 3) added')
     
     fig.savefig(img_path, bbox_inches='tight')
@@ -108,7 +109,9 @@ def plot_map(model_names, model_dirs, stage, img_path):
     input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))[0]
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
     input_R, truth_R = ref_to_R(input_), ref_to_R(truth)
-    input_R, truth_R = input_R[0, -1, 0].numpy(), truth_R[0, -1, 0].numpy()
+    # input_R, truth_R = input_R[0, -1, 0].numpy(), truth_R[0, -1, 0].numpy()
+    input_R = torch.mean(input_R, dim=1).squeeze().numpy()
+    truth_R = torch.mean(truth_R, dim=1).squeeze().numpy()
     num_subplot = len(model_names) + 1
     num_row = 2
     num_col = num_subplot // num_row
@@ -143,6 +146,7 @@ def plot_map(model_names, model_dirs, stage, img_path):
         ax.tick_params(labelsize=12)
         ax.set_aspect('equal')
         ax.set_title(title, fontsize=20, pad=10)
+        print('Subplot ({}, {}, {}) added'.format(2, num_col, n + 1))
     
     fig.subplots_adjust(right=0.9)
     cax = fig.add_axes([0.94, 0.14, 0.012, 0.72])
@@ -159,17 +163,20 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
     print('Plotting {} ...'.format(img_path))
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
     truth_R = ref_to_R(truth)
-    xs = truth_R[0, -1, 0].numpy().flatten()
+    # xs = truth_R[0, -1, 0].numpy().flatten()
+    xs = torch.mean(truth_R, dim=1).numpy().flatten()
     idx = np.random.choice(np.arange(len(xs)), 10000)
     
     num_subplot = len(model_names)
     num_col = 4
-    fig = plt.figure(figsize=(num_col * 6, (num_subplot // num_col + 1) * 6), dpi=300)
+    num_row = 2
+    fig = plt.figure(figsize=(num_col * 6, 2 * 6), dpi=300)
     for n in range(num_subplot):
         ax = fig.add_subplot(2, (num_subplot + 1) // 2, n + 1)
         pred = torch.load(os.path.join(model_dirs[n], stage, 'pred', 'pred.pt'))[0]
         pred_R = ref_to_R(pred)
-        ys = pred_R[0, -1, 0].numpy().flatten()
+        # ys = pred_R[0, -1, 0].numpy().flatten()
+        ys = torch.mean(pred_R, dim=1).numpy().flatten()
         x, y = xs[idx], ys[idx]
         data = np.vstack([x, y])
         kde = gaussian_kde(data)
@@ -187,10 +194,10 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
         ax.axline((0, 0), (1, 1), color='k', linewidth=1, transform=ax.transAxes)
         ax.set_aspect('equal')
         ax.tick_params(labelsize=16)
-        print('Subplot ({}, {}, {}) added'.format(2, (num_subplot + 1) // 2, n + 1))
+        print('Subplot ({}, {}, {}) added'.format(num_row, num_col, n + 1))
     
     plt.rc('font', size=16)
-    cax = fig.add_subplot(2, (num_subplot + 1) // 2, num_subplot + 1)
+    cax = fig.add_subplot(num_row, num_col, num_subplot + 1)
     cax.set_position([cax.get_position().x0, cax.get_position().y0, 
                       cax.get_position().width * 0.1, cax.get_position().height])
     fmt = ticker.ScalarFormatter(useMathText=True)
@@ -251,51 +258,97 @@ def plot_psd(model_names, model_dirs, stage, img_path):
 
 def plot_taylor_diagram(model_names: str, model_dirs: list, stage: str, img_path: str, 
                         std_range: tuple = (0, 1), std_num: int = 6):
+    print('Plotting {} ...'.format(img_path))
     fig = plt.figure(figsize=(4, 4), dpi=300)
     truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
-    truth_60min = truth[0, -1, 0].numpy()
-    ref_std_60min = np.std(truth_60min)
-    taylor_diagram_60min = TaylorDiagram(ref_std_60min, fig, rect=111, 
-                                         std_min=std_range[0], std_max=std_range[1],
-                                         std_label_format='%.1f', num_std=std_num, 
-                                         label='OBS', normalized=True)
+    truth_R = ref_to_R(truth)
+    # truth = truth[0, -1, 0].numpy()
+    truth_R = torch.mean(truth_R, dim=1).numpy().flatten()
+    ref_std = np.std(truth_R)
+    taylor_diagram = TaylorDiagram(ref_std, fig, rect=111, 
+                                   std_min=std_range[0], std_max=std_range[1],
+                                   std_label_format='%.1f', num_std=std_num, 
+                                   label='OBS', normalized=True)
     # Add grid
-    taylor_diagram_60min.add_grid()
+    taylor_diagram.add_grid()
 
     # Add RMS contours, and label them
-    contours_60 = taylor_diagram_60min.add_contours(colors='grey')
-    plt.clabel(contours_60, inline=1, fontsize='medium', fmt='%.2f')
+    contours = taylor_diagram.add_contours(colors='grey')
+    plt.clabel(contours, inline=1, fontsize='medium', fmt='%.2f')
 
     # Add scatters
     for i, model_dir in enumerate(model_dirs):
         pred = torch.load(os.path.join(model_dir, stage, 'pred', 'pred.pt'))[0]
-        pred_60min = pred[0, -1, 0].numpy()
-        stddev_60min = np.std(pred_60min)
-        corrcoef_60min = np.corrcoef(truth_60min.flatten(), pred_60min.flatten())[0, 1]
-        taylor_diagram_60min.add_sample(stddev_60min / ref_std_60min, corrcoef_60min, 
-                                        color=COLORS[i], marker=MARKERS[i], label=model_names[i], 
-                                        markersize=4, linestyle='')
+        pred_R = ref_to_R(pred)
+        # pred = pred[0, -1, 0].numpy()
+        pred_R = torch.mean(pred_R, dim=1).numpy().flatten()
+        stddev = np.std(pred_R)
+        corrcoef = np.corrcoef(truth_R, pred_R)[0, 1]
+        taylor_diagram.add_sample(stddev / ref_std, corrcoef, 
+                                  color=COLORS[i], marker=MARKERS[i], label=model_names[i], 
+                                  markersize=4, linestyle='')
     
     # Add a figure legend
-    taylor_diagram_60min.ax.legend(taylor_diagram_60min.samplePoints,
-                                   [p.get_label() for p in taylor_diagram_60min.samplePoints],
-                                   numpoints=1, loc='lower center', bbox_to_anchor=(0.5, -0.4),
-                                   ncol=2, fontsize='small', edgecolor='w', fancybox=False)
+    taylor_diagram.ax.legend(taylor_diagram.samplePoints,
+                             [p.get_label() for p in taylor_diagram.samplePoints],
+                             numpoints=1, loc='lower center', bbox_to_anchor=(0.5, -0.4),
+                             ncol=2, fontsize='small', edgecolor='w', fancybox=False)
     
     # Add title
     fig.savefig(img_path, bbox_inches='tight')
     plt.close(fig)
+
+
+def plot_obs(model_dirs: list, stage: str, img_path: str):
+    print('Plotting {} ...'.format(img_path))
+    input_ = torch.load(os.path.join(model_dirs[0], stage, 'input', 'input.pt'))[0]
+    truth = torch.load(os.path.join(model_dirs[0], stage, 'truth', 'truth.pt'))[0]
+    input_R = ref_to_R(input_).squeeze().numpy()
+    truth_R = ref_to_R(truth).squeeze().numpy()
+
+    fig = plt.figure(figsize=(12, 3), dpi=300)
+    for i in range(10):
+        ax = fig.add_subplot(2, 10, i + 1, projection=ccrs.UTM(50))
+        ax.pcolorfast(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
+                      input_R[i], cmap=CMAP, norm=NORM, transform=ccrs.UTM(50))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        timestr = '{} min'.format((i - 9) * 6)
+        ax.set_title(timestr, fontsize=10, pad=3)
+        if i == 0:
+            ax.set_ylabel('Input', fontsize=10)
     
+    for i in range(10):
+        ax = fig.add_subplot(2, 10, i + 11, projection=ccrs.UTM(50))
+        ax.pcolorfast(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
+                      truth_R[i], cmap=CMAP, norm=NORM, transform=ccrs.UTM(50))
+        ax.set_xticks([])
+        ax.set_yticks([])
+        timestr = '+{} min'.format((i + 1) * 6)
+        ax.set_title(timestr, fontsize=10, pad=3)
+        if i == 0:
+            ax.set_ylabel('OBS', fontsize=10)
+    
+    fig.subplots_adjust(right=0.95, hspace=0.1, wspace=0)
+    cax = fig.add_axes([0.97, 0.15, 0.01, 0.7])
+    cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
+    cbar.set_label('降水强度 (mm/h)', fontsize=12, labelpad=10, fontfamily='SimHei')
+    cbar.ax.tick_params(labelsize=10)
+
+    fig.savefig(img_path, bbox_inches='tight')
+    print('{}'.format(img_path))
+    plt.close(fig)    
 
 
 if __name__ == '__main__':
     model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
                   'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
-    plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
+    # plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
     for i in range(2):
-        plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
-        plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
-        plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
-        plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
-        plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
+        # plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
+        # plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
+        # plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
+        # plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
+        # plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
+        plot_obs(model_dirs, 'case_{}'.format(i), 'results/img_cn/obs_case_{}.jpg'.format(i))

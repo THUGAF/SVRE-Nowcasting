@@ -479,16 +479,6 @@ def predict(generator: nn.Module, case_loader: DataLoader):
     generator.eval()
 
     for i, (tensor, timestamp) in enumerate(case_loader):
-        for threshold in args.thresholds:
-            metrics['POD_{:.1f}'.format(threshold)] = 0
-            metrics['FAR_{:.1f}'.format(threshold)] = 0
-            metrics['CSI_{:.1f}'.format(threshold)] = 0
-        metrics['MBE'] = 0
-        metrics['MAE'] = 0
-        metrics['RMSE'] = 0
-        metrics['SSIM'] = 0
-        metrics['JSD'] = 0
-
         time_str = datetime.datetime.utcfromtimestamp(int(timestamp[0, i]))
         time_str = time_str.strftime('%Y-%m-%d %H:%M:%S')
         print('\nCase {} at {}'.format(i, time_str))
@@ -504,22 +494,22 @@ def predict(generator: nn.Module, case_loader: DataLoader):
         pred = transform.inverse_minmax_norm(pred_norm)
         truth_R = transform.ref_to_R(truth)
         pred_R = transform.ref_to_R(pred)
-            
+        
         # Evaluation
         for threshold in args.thresholds:
             pod, far, csi = evaluation.evaluate_forecast(pred, truth, threshold)
             metrics['POD_{:.1f}'.format(threshold)] = pod
             metrics['FAR_{:.1f}'.format(threshold)] = far
             metrics['CSI_{:.1f}'.format(threshold)] = csi
-        metrics['MBE'] += evaluation.evaluate_mbe(pred_R, truth_R)
-        metrics['MAE'] += evaluation.evaluate_mae(pred_R, truth_R)
-        metrics['RMSE'] += evaluation.evaluate_rmse(pred_R, truth_R)
-        metrics['SSIM'] += evaluation.evaluate_ssim(pred_norm, truth_norm)
-        metrics['JSD'] += evaluation.evaluate_jsd(pred, truth)
+        metrics['MBE'] = evaluation.evaluate_mbe(pred_R, truth_R)
+        metrics['MAE'] = evaluation.evaluate_mae(pred_R, truth_R)
+        metrics['RMSE'] = evaluation.evaluate_rmse(pred_R, truth_R)
+        metrics['SSIM'] = evaluation.evaluate_ssim(pred_norm, truth_norm)
+        metrics['JSD'] = evaluation.evaluate_jsd(pred, truth)
             
         # Save metrics
         for key in metrics.keys():
-            metrics[key] = metrics[key] / args.num_ensembles
+            metrics[key] = metrics[key]
         df = pd.DataFrame(data=metrics, index=[0])
         df.to_csv(os.path.join(args.output_path, 'case_{}_metrics.csv'.format(i)), 
                   float_format='%.6f', index=False)
