@@ -47,7 +47,7 @@ def plot_bar(model_names, stage, img_path):
     df = pd.read_excel('results/metrics.xlsx', sheet_name=stage, index_col=0)
     print(df)
     
-    fig = plt.figure(figsize=(7, 9), dpi=300)
+    fig = plt.figure(figsize=(9, 9), dpi=300)
     num_models = len(model_names)
     width = 1 / (num_models + 1)
     
@@ -63,8 +63,8 @@ def plot_bar(model_names, stage, img_path):
         bars.append(b)
     ax1.set_xticks(l, labels=labels)
     ax1.set_ylim(0, 1)
-    ax1.tick_params(labelsize=10)
-    ax1.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
+    ax1.tick_params(labelsize=11)
+    ax1.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=10, ncols=3)
     print('Subplot (3, 1, 1) added')
     
     ax2 = fig.add_subplot(3, 1, 2)
@@ -79,8 +79,8 @@ def plot_bar(model_names, stage, img_path):
         bars.append(b)
     ax2.set_xticks(l, labels=labels)
     ax2.set_ylim(0, np.ceil(np.max(metrics)))
-    ax2.tick_params(labelsize=10)
-    ax2.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
+    ax2.tick_params(labelsize=11)
+    ax2.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=10, ncols=3)
     print('Subplot (3, 1, 2) added')
     
     ax3 = fig.add_subplot(3, 1, 3)
@@ -95,8 +95,8 @@ def plot_bar(model_names, stage, img_path):
         bars.append(b)
     ax3.set_xticks(l, labels=labels)
     ax3.set_ylim(0, 1)
-    ax3.tick_params(labelsize=10)
-    ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=8, ncols=2)
+    ax3.tick_params(labelsize=11)
+    ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=10, ncols=3)
     print('Subplot (3, 1, 3) added')
     
     fig.savefig(img_path, bbox_inches='tight')
@@ -344,11 +344,11 @@ if __name__ == '__main__':
     model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
                   'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
-    # plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
+    plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
     for i in range(2):
-        # plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
-        # plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
-        # plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
-        # plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
-        # plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
+        plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
+        plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
+        plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
+        plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
+        plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
         plot_obs(model_dirs, 'case_{}'.format(i), 'results/img_cn/obs_case_{}.jpg'.format(i))
