@@ -337,7 +337,7 @@ def plot_obs(model_dirs: list, stage: str, img_path: str):
 
     fig.savefig(img_path, bbox_inches='tight')
     print('{}'.format(img_path))
-    plt.close(fig)    
+    plt.close(fig)
 
 
 if __name__ == '__main__':
