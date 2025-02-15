@@ -42,6 +42,39 @@ plt.rcParams['mathtext.rm'] = 'Arial'               # 用于正常数学文本
 plt.rcParams['mathtext.it'] = 'Arial:italic'        # 用于斜体数学文本
 
 
+def get_model_metrics(model_dir: str):
+    test_metrics_path = os.path.join(model_dir, 'test_metrics.csv')
+    case_0_metrics_path = os.path.join(model_dir, 'case_0_metrics.csv')
+    case_1_metrics_path = os.path.join(model_dir, 'case_1_metrics.csv')
+    test_metrics_df = pd.read_csv(test_metrics_path)
+    case_0_metrics_df = pd.read_csv(case_0_metrics_path)
+    case_1_metrics_df = pd.read_csv(case_1_metrics_path)
+    return test_metrics_df, case_0_metrics_df, case_1_metrics_df
+
+
+def concat_model_metrics(metrics: dict):       
+    metrics_60min = pd.concat(metrics.values())
+    metrics_60min = metrics_60min.drop(columns=['POD_20.0', 'FAR_20.0', 'CSI_20.0', 
+                                                'POD_40.0', 'FAR_40.0', 'CSI_40.0'])
+    metrics_60min = metrics_60min.rename(columns={'POD_30.0': 'POD', 'FAR_30.0': 'FAR', 'CSI_30.0': 'CSI'})
+    metrics_60min.index = metrics.keys()
+    print(metrics_60min)
+    return metrics_60min
+
+
+def analyze_metrics(model_names, model_dirs):
+    test_metrics, case_0_metrics, case_1_metrics = {}, {}, {}
+    for name, dir_ in zip(model_names, model_dirs):
+        test_metrics[name], case_0_metrics[name], case_1_metrics[name] = get_model_metrics(dir_)
+    test_metrics = concat_model_metrics(test_metrics)
+    case_0_metrics = concat_model_metrics(case_0_metrics)
+    case_1_metrics = concat_model_metrics(case_1_metrics)
+    with pd.ExcelWriter('results/metrics.xlsx') as writer:
+        test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
+        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
+        case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
+
+
 def plot_bar(model_names, stage, img_path):
     print('Plotting {} ...'.format(img_path))
     df = pd.read_excel('results/metrics.xlsx', sheet_name=stage, index_col=0)
@@ -84,6 +117,7 @@ def plot_bar(model_names, stage, img_path):
     print('Subplot (3, 1, 2) added')
     
     ax3 = fig.add_subplot(3, 1, 3)
+    width = width / 2
     labels = df.columns.values[6:8]
     metrics = df.values[:, 6:8]
     l = np.arange(len(labels))
@@ -344,6 +378,7 @@ if __name__ == '__main__':
     model_names = ['PySTEPS', 'SmaAt-UNet', 'MotionRNN', 'AN+L1', 'AN+SVRE', 'AGAN+L1', 'AGAN+SVRE']
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
                   'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
+    analyze_metrics(model_names, model_dirs)
     plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
     for i in range(2):
         plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
@@ -352,3 +387,4 @@ if __name__ == '__main__':
         plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
         plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
         plot_obs(model_dirs, 'case_{}'.format(i), 'results/img_cn/obs_case_{}.jpg'.format(i))
+        
