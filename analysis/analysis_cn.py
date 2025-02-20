@@ -44,12 +44,12 @@ plt.rcParams['mathtext.it'] = 'Arial:italic'        # 用于斜体数学文本
 
 def get_model_metrics(model_dir: str):
     test_metrics_path = os.path.join(model_dir, 'test_metrics.csv')
-    case_0_metrics_path = os.path.join(model_dir, 'case_0_metrics.csv')
-    case_1_metrics_path = os.path.join(model_dir, 'case_1_metrics.csv')
+    case_1_metrics_path = os.path.join(model_dir, 'case_2_metrics.csv')
+    case_2_metrics_path = os.path.join(model_dir, 'case_2_metrics.csv')
     test_metrics_df = pd.read_csv(test_metrics_path)
-    case_0_metrics_df = pd.read_csv(case_0_metrics_path)
     case_1_metrics_df = pd.read_csv(case_1_metrics_path)
-    return test_metrics_df, case_0_metrics_df, case_1_metrics_df
+    case_2_metrics_df = pd.read_csv(case_2_metrics_path)
+    return test_metrics_df, case_1_metrics_df, case_2_metrics_df
 
 
 def concat_model_metrics(metrics: dict):       
@@ -63,16 +63,16 @@ def concat_model_metrics(metrics: dict):
 
 
 def analyze_metrics(model_names, model_dirs):
-    test_metrics, case_0_metrics, case_1_metrics = {}, {}, {}
+    test_metrics, case_1_metrics, case_2_metrics = {}, {}, {}
     for name, dir_ in zip(model_names, model_dirs):
-        test_metrics[name], case_0_metrics[name], case_1_metrics[name] = get_model_metrics(dir_)
+        test_metrics[name], case_1_metrics[name], case_2_metrics[name] = get_model_metrics(dir_)
     test_metrics = concat_model_metrics(test_metrics)
-    case_0_metrics = concat_model_metrics(case_0_metrics)
     case_1_metrics = concat_model_metrics(case_1_metrics)
+    case_2_metrics = concat_model_metrics(case_2_metrics)
     with pd.ExcelWriter('results/metrics.xlsx') as writer:
         test_metrics.to_excel(writer, sheet_name='test', index_label='Model', float_format='%.4f')
-        case_0_metrics.to_excel(writer, sheet_name='case_0', index_label='Model', float_format='%.4f')
         case_1_metrics.to_excel(writer, sheet_name='case_1', index_label='Model', float_format='%.4f')
+        case_2_metrics.to_excel(writer, sheet_name='case_2', index_label='Model', float_format='%.4f')
 
 
 def plot_bar(model_names, stage, img_path):
@@ -80,11 +80,12 @@ def plot_bar(model_names, stage, img_path):
     df = pd.read_excel('results/metrics.xlsx', sheet_name=stage, index_col=0)
     print(df)
     
-    fig = plt.figure(figsize=(9, 9), dpi=300)
+    fig = plt.figure(figsize=(11, 9), dpi=300)
     num_models = len(model_names)
     width = 1 / (num_models + 1)
     
     ax1 = fig.add_subplot(3, 1, 1)
+    ax1.set_title('预报准确率指标', fontsize=14, fontfamily='SimHei')
     labels = df.columns.values[:3]
     metrics = df.values[:, :3]
     l = np.arange(len(labels))
@@ -101,6 +102,7 @@ def plot_bar(model_names, stage, img_path):
     print('Subplot (3, 1, 1) added')
     
     ax2 = fig.add_subplot(3, 1, 2)
+    ax2.set_title('预报误差指标', fontsize=14, fontfamily='SimHei')
     labels = df.columns.values[3:6]
     metrics = df.values[:, 3:6]
     l = np.arange(len(labels))
@@ -117,6 +119,7 @@ def plot_bar(model_names, stage, img_path):
     print('Subplot (3, 1, 2) added')
     
     ax3 = fig.add_subplot(3, 1, 3)
+    ax3.set_title('空间变异性指标', fontsize=14, fontfamily='SimHei')
     width = width / 2
     labels = df.columns.values[6:8]
     metrics = df.values[:, 6:8]
@@ -133,6 +136,7 @@ def plot_bar(model_names, stage, img_path):
     ax3.legend(bars, model_names, edgecolor='w', fancybox=False, fontsize=10, ncols=3)
     print('Subplot (3, 1, 3) added')
     
+    fig.subplots_adjust(hspace=0.35)
     fig.savefig(img_path, bbox_inches='tight')
     print('{}'.format(img_path))
     plt.close(fig)
@@ -147,7 +151,7 @@ def plot_map(model_names, model_dirs, stage, img_path):
     input_R = torch.mean(input_R, dim=1).squeeze().numpy()
     truth_R = torch.mean(truth_R, dim=1).squeeze().numpy()
     num_subplot = len(model_names) + 1
-    num_row = 2
+    num_row = 4
     num_col = num_subplot // num_row
     fig = plt.figure(figsize=(num_col* 6, num_row * 6), dpi=300)
     for n in range(num_subplot):
@@ -182,8 +186,8 @@ def plot_map(model_names, model_dirs, stage, img_path):
         ax.set_title(title, fontsize=20, pad=10)
         print('Subplot ({}, {}, {}) added'.format(2, num_col, n + 1))
     
-    fig.subplots_adjust(right=0.9)
-    cax = fig.add_axes([0.94, 0.14, 0.012, 0.72])
+    fig.subplots_adjust(right=0.9, hspace=0.3, wspace=0.2)
+    cax = fig.add_axes([0.95, 0.15, 0.02, 0.7])
     cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
     cbar.set_label('降水强度 (mm/h)', fontsize=20, fontfamily='SimHei')
     cbar.ax.tick_params(labelsize=18)
@@ -199,14 +203,15 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
     truth_R = ref_to_R(truth)
     # xs = truth_R[0, -1, 0].numpy().flatten()
     xs = torch.mean(truth_R, dim=1).numpy().flatten()
+    np.random.seed(2025)
     idx = np.random.choice(np.arange(len(xs)), 10000)
     
     num_subplot = len(model_names)
-    num_col = 4
-    num_row = 2
-    fig = plt.figure(figsize=(num_col * 6, 2 * 6), dpi=300)
+    num_col = 3
+    num_row = 3
+    fig = plt.figure(figsize=(num_col * 6, num_row * 6), dpi=300)
     for n in range(num_subplot):
-        ax = fig.add_subplot(2, (num_subplot + 1) // 2, n + 1)
+        ax = fig.add_subplot(num_row, num_col, n + 1)
         pred = torch.load(os.path.join(model_dirs[n], stage, 'pred', 'pred.pt'))[0]
         pred_R = ref_to_R(pred)
         # ys = pred_R[0, -1, 0].numpy().flatten()
@@ -216,20 +221,18 @@ def plot_scatter(model_names, model_dirs, stage, img_path):
         kde = gaussian_kde(data)
         density = kde.evaluate(data)
         sc = ax.scatter(x, y, c=density, s=10, cmap='jet', norm=pcolors.Normalize(0, 0.01))
-        ax.set_title(model_names[n], fontsize=20)
-        if n >= num_subplot - num_col:
-            ax.set_xlabel('观测值 (mm/h)', fontsize=18, fontfamily='SimHei')
+        ax.set_title(model_names[n], fontsize=24)
+        ax.set_xlabel('观测值 (mm/h)', fontsize=20, fontfamily='SimHei')
         if n % num_col == 0:
-            ax.set_ylabel('预报值 (mm/h)', fontsize=18, labelpad=10, fontfamily='SimHei')
+            ax.set_ylabel('预报值 (mm/h)', fontsize=20, labelpad=10, fontfamily='SimHei')
         ax.set_xlim([0, 100])
         ax.set_ylim([0, 100])
-        ax.xaxis.set_major_locator(ticker.MultipleLocator(10))
-        ax.yaxis.set_major_locator(ticker.MultipleLocator(10))
         ax.axline((0, 0), (1, 1), color='k', linewidth=1, transform=ax.transAxes)
         ax.set_aspect('equal')
         ax.tick_params(labelsize=16)
         print('Subplot ({}, {}, {}) added'.format(num_row, num_col, n + 1))
     
+    fig.subplots_adjust(hspace=0.3)
     plt.rc('font', size=16)
     cax = fig.add_subplot(num_row, num_col, num_subplot + 1)
     cax.set_position([cax.get_position().x0, cax.get_position().y0, 
@@ -350,7 +353,7 @@ def plot_obs(model_dirs: list, stage: str, img_path: str):
         timestr = '{} min'.format((i - 9) * 6)
         ax.set_title(timestr, fontsize=10, pad=3)
         if i == 0:
-            ax.set_ylabel('Input', fontsize=10)
+            ax.set_ylabel('输入序列', fontsize=10, fontfamily='SimHei')
     
     for i in range(10):
         ax = fig.add_subplot(2, 10, i + 11, projection=ccrs.UTM(50))
@@ -361,9 +364,9 @@ def plot_obs(model_dirs: list, stage: str, img_path: str):
         timestr = '+{} min'.format((i + 1) * 6)
         ax.set_title(timestr, fontsize=10, pad=3)
         if i == 0:
-            ax.set_ylabel('OBS', fontsize=10)
+            ax.set_ylabel('目标序列', fontsize=10, fontfamily='SimHei')
     
-    fig.subplots_adjust(right=0.95, hspace=0.1, wspace=0)
+    fig.subplots_adjust(right=0.95, hspace=0.2, wspace=0)
     cax = fig.add_axes([0.97, 0.15, 0.01, 0.7])
     cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
     cbar.set_label('降水强度 (mm/h)', fontsize=12, labelpad=10, fontfamily='SimHei')
@@ -379,12 +382,12 @@ if __name__ == '__main__':
     model_dirs = ['results/PySTEPS', 'results/SmaAt_UNet', 'results/MotionRNN', 'results/AN', 
                   'results/AN_SVRE', 'results/AGAN', 'results/AGAN_SVRE']
     analyze_metrics(model_names, model_dirs)
-    plot_bar(model_names, 'test', 'results/img_cn/bar_test.jpg')
+    plot_bar(model_names, 'test', 'results/img_cn/bar_test.png')
     for i in range(2):
-        plot_bar(model_names, 'case_{}'.format(i), 'results/img_cn/bar_case_{}.jpg'.format(i))
-        plot_map(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/vis_case_{}.jpg'.format(i))
-        plot_scatter(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/scatter_case_{}.jpg'.format(i))
-        plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/taylor_case_{}.jpg'.format(i))
-        plot_psd(model_names, model_dirs, 'case_{}'.format(i), 'results/img_cn/psd_case_{}.jpg'.format(i))
-        plot_obs(model_dirs, 'case_{}'.format(i), 'results/img_cn/obs_case_{}.jpg'.format(i))
+        plot_bar(model_names, 'case_{}'.format(i + 1), 'results/img_cn/bar_case_{}.png'.format(i + 1))
+        plot_map(model_names, model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/vis_case_{}.png'.format(i + 1))
+        plot_scatter(model_names, model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/scatter_case_{}.png'.format(i + 1))
+        plot_taylor_diagram(model_names, model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/taylor_case_{}.png'.format(i + 1))
+        plot_psd(model_names, model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/psd_case_{}.png'.format(i + 1))
+        plot_obs(model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/obs_case_{}.png'.format(i + 1))
         

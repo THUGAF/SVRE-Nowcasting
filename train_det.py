@@ -428,18 +428,18 @@ def predict(model: nn.Module, case_loader: DataLoader):
 
         # Save tensors and figures
         visualizer.save_tensor(input_, timestamp[:, :args.input_steps],
-                               args.output_path, 'case_{}'.format(i), 'input')
+                               args.output_path, 'case_{}'.format(i + 1), 'input')
         visualizer.save_tensor(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                               args.output_path, 'case_{}'.format(i), 'truth')
+                               args.output_path, 'case_{}'.format(i + 1), 'truth')
         visualizer.save_tensor(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                               args.output_path, 'case_{}'.format(i), 'pred')
+                               args.output_path, 'case_{}'.format(i + 1), 'pred')
         print('Tensors saved')
         visualizer.plot_figs(input_, timestamp[:, :args.input_steps],
-                             args.output_path, 'case_{}'.format(i), 'input')
+                             args.output_path, 'case_{}'.format(i + 1), 'input')
         visualizer.plot_figs(truth, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                             args.output_path, 'case_{}'.format(i), 'truth')
+                             args.output_path, 'case_{}'.format(i + 1), 'truth')
         visualizer.plot_figs(pred, timestamp[:, args.input_steps: args.input_steps + args.forecast_steps],
-                             args.output_path, 'case_{}'.format(i), 'pred')
+                             args.output_path, 'case_{}'.format(i + 1), 'pred')
         visualizer.plot_psd(pred, truth, args.output_path, 'case_{}'.format(i))
         print('Figures saved')
     
