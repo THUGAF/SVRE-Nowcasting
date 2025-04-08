@@ -150,8 +150,8 @@ def plot_map(model_names, model_dirs, stage, img_path):
     input_R = torch.mean(input_R, dim=1).squeeze().numpy()
     truth_R = torch.mean(truth_R, dim=1).squeeze().numpy()
     num_subplot = len(model_names) + 1
-    num_row = 4
-    num_col = num_subplot // num_row
+    num_row = 3
+    num_col = 3
     fig = plt.figure(figsize=(num_col* 6, num_row * 6), dpi=300)
     for n in range(num_subplot):
         ax = fig.add_subplot(num_row, num_col, n + 1, projection=ccrs.UTM(50))
@@ -170,26 +170,30 @@ def plot_map(model_names, model_dirs, stage, img_path):
         ax.pcolorfast(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
                       tensor, cmap=CMAP, norm=NORM, transform=ccrs.UTM(50))
 
-        xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 0.5)
-        yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 0.5)
+        xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 1)
+        yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 1)
         gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
                           linewidth=1, linestyle=':', color='k', alpha=0.8)
         gl.xlabel_style = {'size': 14}
         gl.ylabel_style = {'size': 14}
         if n % num_col < num_col - 1:
             gl.right_labels = False
+        if n == num_subplot - 1:
+            gl.right_labels = True
         ax.xaxis.set_major_formatter(LongitudeFormatter())
         ax.yaxis.set_major_formatter(LatitudeFormatter())
         ax.tick_params(labelsize=12)
         ax.set_aspect('equal')
         ax.set_title(title, fontsize=20, pad=10)
-        print('Subplot ({}, {}, {}) added'.format(2, num_col, n + 1))
+        print('Subplot ({}, {}, {}) added'.format(num_row, num_col, n + 1))
     
-    fig.subplots_adjust(right=0.9, hspace=0.3, wspace=0.2)
-    cax = fig.add_axes([0.95, 0.15, 0.02, 0.7])
+    fig.subplots_adjust(hspace=0.3, wspace=0)
+    cax = fig.add_subplot(num_row, num_col, num_subplot + 1)
+    cax.set_position([cax.get_position().x0 * 1.05, cax.get_position().y0, 
+                      cax.get_position().width * 0.05, cax.get_position().height])
     cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
     cbar.set_label('降水强度 (mm/h)', fontsize=20, fontfamily='SimHei')
-    cbar.ax.tick_params(labelsize=18)
+    cbar.ax.tick_params(labelsize=14)
 
     fig.savefig(img_path, bbox_inches='tight')
     print('{}'.format(img_path))
@@ -224,8 +228,8 @@ def plot_map_2(model_names, model_dirs, stage, img_path):
         ax.pcolorfast(UTM_X[X_RANGE[0]: X_RANGE[1] + 1], UTM_Y[Y_RANGE[0]: Y_RANGE[1] + 1],
                       tensor, cmap=CMAP, norm=NORM, transform=ccrs.UTM(50))
 
-        xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 0.5)
-        yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 0.5)
+        xticks = np.arange(np.floor(STUDY_AREA[0]), np.ceil(STUDY_AREA[1]), 1)
+        yticks = np.arange(np.floor(STUDY_AREA[2]), np.ceil(STUDY_AREA[3]), 1)
         gl = ax.gridlines(crs=ccrs.PlateCarree(), xlocs=xticks, ylocs=yticks, draw_labels=True,
                           linewidth=1, linestyle=':', color='k', alpha=0.8)
         gl.xlabel_style = {'size': 14}
@@ -237,13 +241,13 @@ def plot_map_2(model_names, model_dirs, stage, img_path):
         ax.tick_params(labelsize=12)
         ax.set_aspect('equal')
         ax.set_title(title, fontsize=20, pad=10)
-        print('Subplot ({}, {}, {}) added'.format(2, num_col, n + 1))
+        print('Subplot ({}, {}, {}) added'.format(num_row, num_col, n + 1))
     
-    fig.subplots_adjust(right=0.9, hspace=0.3, wspace=0.2)
-    cax = fig.add_axes([0.95, 0.15, 0.01, 0.7])
+    fig.subplots_adjust(right=0.93, hspace=0.3, wspace=0)
+    cax = fig.add_axes([0.95, 0.2, 0.01, 0.6])
     cbar = fig.colorbar(cm.ScalarMappable(cmap=CMAP, norm=NORM), cax=cax, orientation='vertical')
     cbar.set_label('降水强度 (mm/h)', fontsize=20, fontfamily='SimHei')
-    cbar.ax.tick_params(labelsize=18)
+    cbar.ax.tick_params(labelsize=14)
 
     fig.savefig(img_path, bbox_inches='tight')
     print('{}'.format(img_path))
