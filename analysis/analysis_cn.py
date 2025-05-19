@@ -449,4 +449,3 @@ if __name__ == '__main__':
         plot_psd(model_names, model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/psd_case_{}.png'.format(i + 1))
         plot_obs(model_dirs, 'case_{}'.format(i + 1), 'results/img_cn/obs_case_{}.png'.format(i + 1))
         
-        
